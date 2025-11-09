@@ -5,6 +5,13 @@ VisualStudioVersion = 17.14.36603.0 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniLibraryMgmtSys", "MiniLibraryMgmtSys\MiniLibraryMgmtSys.csproj", "{E44BA90F-8D19-4218-89CC-2AC7F1D1F732}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniLibraryMgmtSys.Database", "MiniLibraryMgmtSys.Database\MiniLibraryMgmtSys.Database.csproj", "{A79C86B6-CEDA-4D68-BCE2-78DD058CF23C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		C:\Users\USER\Downloads\library_management_modules.md = C:\Users\USER\Downloads\library_management_modules.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +22,10 @@ Global
 		{E44BA90F-8D19-4218-89CC-2AC7F1D1F732}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E44BA90F-8D19-4218-89CC-2AC7F1D1F732}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E44BA90F-8D19-4218-89CC-2AC7F1D1F732}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A79C86B6-CEDA-4D68-BCE2-78DD058CF23C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A79C86B6-CEDA-4D68-BCE2-78DD058CF23C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A79C86B6-CEDA-4D68-BCE2-78DD058CF23C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A79C86B6-CEDA-4D68-BCE2-78DD058CF23C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
