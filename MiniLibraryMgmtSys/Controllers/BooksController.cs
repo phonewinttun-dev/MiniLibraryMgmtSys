@@ -2,8 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
+using MiniLibraryMgmtSys.DTO;
 using System.Data;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static MiniLibraryMgmtSys.DTO.BookDTO;
 
 namespace MiniLibraryMgmtSys.Controllers
 {
@@ -41,5 +43,37 @@ namespace MiniLibraryMgmtSys.Controllers
 
             return Ok(lst);
         }
+
+        [HttpPost]
+        public IActionResult CreateBook([FromBody] BookDto request)
+        {
+            db.TblBooks.Add(new TblBook
+            {
+                Id = Guid.NewGuid().ToString(),
+                Author = request.Author,
+                Title = request.Title,
+                Genre = request.Genre,
+                DeleteFlag = false
+            });
+
+
+
+            var result = db.SaveChanges();
+
+            string message = result > 0 ? "Book created successfully." : "Failed to create book.";
+
+            BookResponseDto response = new BookResponseDto
+            {
+                IsSuccess = result > 0,
+                Message = message,
+            };
+
+            return Ok(response);
+        }
+
+
+
+
+
     }
 }
