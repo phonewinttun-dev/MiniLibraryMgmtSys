@@ -256,20 +256,54 @@ namespace MiniLibraryMgmtSys.Controllers
 
         }
 
-        [HttpGet("searchBooks")]
-        public IActionResult SearchBooks([FromQuery] string query)
+        //[HttpGet("searchBooks")]
+        //public IActionResult SearchBooks([FromQuery] string query)
+        //{
+        //    var results = BookQuery
+        //                    .Where(book => book.Title.Contains(query) || book.Author.Contains(query) || book.Genre.Contains(query))
+        //                    .Select(book => new
+        //                    {
+        //                        book.Id,
+        //                        book.Author,
+        //                        book.Title,
+        //                        book.Genre,
+        //                        book.IsAvailable
+        //                    })
+        //                    .ToList();
+        //    return Ok(results);
+        //}
+
+        [HttpGet("searchByFilter")]
+        public IActionResult SearchByFilter(string? author, string? title, string? genre) 
         {
-            var results = BookQuery
-                            .Where(book => book.Title.Contains(query) || book.Author.Contains(query) || book.Genre.Contains(query))
-                            .Select(book => new
-                            {
-                                book.Id,
-                                book.Author,
-                                book.Title,
-                                book.Genre,
-                                book.IsAvailable
-                            })
-                            .ToList();
+            var query = BookQuery;
+
+            if (author == null && title == null && genre == null)
+            {
+                return BadRequest("You must enter one of the fields to search.");
+            }
+
+            if (!string.IsNullOrEmpty(author))
+                query = query.Where(b => b.Author.Contains(author));
+
+            if (!string.IsNullOrEmpty(title))
+                query = query.Where(b => b.Title.Contains(title));
+
+
+            if (!string.IsNullOrEmpty(genre))
+                query = query.Where(b => b.Genre.Contains(genre));
+
+            var results = query.ToList();
+
+            if (!results.Any())
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "No books found matching the given criteria."
+                });
+            } 
+
             return Ok(results);
         }
 
