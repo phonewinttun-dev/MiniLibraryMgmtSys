@@ -26,7 +26,7 @@ namespace MiniLibraryMgmtSys.Controllers
         private IQueryable<TblBook> AvailableBooks =>
             db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false);
 
-        [HttpGet]
+        [HttpGet("getAllBooks")]
         public IActionResult GetBooks()
         {
             var lst = BookQuery
@@ -42,7 +42,7 @@ namespace MiniLibraryMgmtSys.Controllers
             return Ok(lst);
         }
 
-        [HttpGet("id/{id}")]
+        [HttpGet("getBooksById/{id}")]
         public IActionResult GetBooksById(string id)
         {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
@@ -76,7 +76,7 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
-        [HttpPost]
+        [HttpPost("createBook")]
         public IActionResult CreateBook([FromBody] BookDto request)
         {
             if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Author))
@@ -124,7 +124,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
         }
 
-        [HttpPatch("id/{id}")]
+        [HttpPatch("updateBook/{id}")]
         public IActionResult UpdateBook(string id, [FromBody] BookDto request)
         {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
@@ -165,7 +165,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
         }
 
-        [HttpDelete("id/{id}")]
+        [HttpDelete("deleteBook/{id}")]
         public IActionResult DeleteBook(string id) {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
             
@@ -189,7 +189,7 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
-        [HttpGet]
+        [HttpGet("getAvailableBooks")]
         public IActionResult GetAvailableBooks() 
         {
             var lst = AvailableBooks
@@ -206,7 +206,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
         }
 
-        [HttpPatch("id/{id}")]
+        [HttpPatch("setUnavailable/{id}")]
         public IActionResult SetUnavailable(string id) 
         {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
@@ -231,7 +231,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
         }
 
-        [HttpPatch("id/{id}")]
+        [HttpPatch("setBookStatus/{id}")]
         public IActionResult SetBookStatus(string id, [FromBody] BookDto request)
         {
             var book = BookQuery.FirstOrDefault(book => book.Id.Equals(id));
@@ -256,7 +256,23 @@ namespace MiniLibraryMgmtSys.Controllers
 
         }
 
+        [HttpGet("searchBooks")]
+        public IActionResult SearchBooks([FromQuery] string query)
+        {
+            var results = BookQuery
+                            .Where(book => book.Title.Contains(query) || book.Author.Contains(query) || book.Genre.Contains(query))
+                            .Select(book => new
+                            {
+                                book.Id,
+                                book.Author,
+                                book.Title,
+                                book.Genre,
+                                book.IsAvailable
+                            })
+                            .ToList();
+            return Ok(results);
+        }
 
 
-    }
+        }
 }
