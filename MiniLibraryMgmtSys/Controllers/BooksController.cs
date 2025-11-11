@@ -23,6 +23,9 @@ namespace MiniLibraryMgmtSys.Controllers
         private IQueryable<TblBook> BookQuery =>
             db.TblBooks.Where(book => book.DeleteFlag == false);
 
+        private IQueryable<TblBook> AvailableBooks =>
+            db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false);
+
         [HttpGet]
         public IActionResult GetBooks()
         {
@@ -39,7 +42,7 @@ namespace MiniLibraryMgmtSys.Controllers
             return Ok(lst);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("id/{id}")]
         public IActionResult GetBooksById(string id)
         {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
@@ -186,9 +189,72 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
+        [HttpGet]
+        public IActionResult GetAvailableBooks() 
+        {
+            var lst = AvailableBooks
+                        .Select(book => new {
+                            book.Id,
+                            book.Author,
+                            book.Title,
+                            book.Genre,
+                            book.IsAvailable
+                        })
+                        .ToList();
 
+            return Ok(lst);
 
+        }
 
+        [HttpPatch("id/{id}")]
+        public IActionResult SetUnavailable(string id) 
+        {
+            var book = BookQuery.FirstOrDefault(book => book.Id == id);
+
+            if (book is null)
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Book not found."
+                });
+            }
+
+            book.IsAvailable = false;
+            book.UpdatedAt = DateTime.Now;
+
+            return Ok(new BookResponseDto
+            {
+                IsSuccess = db.SaveChanges() > 0,
+                Message = "Book status updated successfully!"
+            });
+
+        }
+
+        [HttpPatch("id/{id}")]
+        public IActionResult SetBookStatus(string id, [FromBody] BookDto request)
+        {
+            var book = BookQuery.FirstOrDefault(book => book.Id.Equals(id));
+
+            if (book is null)
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Book not found."
+                });
+            }
+
+            book.IsAvailable = request.IsAvailable;
+            book.UpdatedAt = request.UpdatedAt;
+
+            return Ok(new BookResponseDto
+            {
+                IsSuccess = db.SaveChanges() > 0,
+                Message = "Book status updated successfully!"
+            });
+
+        }
 
 
 
