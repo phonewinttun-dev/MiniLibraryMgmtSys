@@ -19,10 +19,9 @@ namespace MiniLibraryMgmtSys.Controllers
             db = new AppDbContext();
         }
         
+        //Book Table Query
         private IQueryable<TblBook> BookQuery =>
             db.TblBooks.Where(book => book.DeleteFlag == false);
-
-
 
         [HttpGet]
         public IActionResult GetBooks()
@@ -56,8 +55,6 @@ namespace MiniLibraryMgmtSys.Controllers
                 DeleteFlag = false
             });
 
-
-
             var result = db.SaveChanges();
 
             string message = result > 0 ? "Book created successfully." : "Failed to create book.";
@@ -70,6 +67,46 @@ namespace MiniLibraryMgmtSys.Controllers
 
             return Ok(response);
         }
+
+        [HttpPatch("id/{Id}")]
+        public IActionResult UpdateBook(string Id, [FromBody] BookDto request)
+        {
+            var book = BookQuery.FirstOrDefault(book => book.Id == Id);
+
+            if (book is null)
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Book not found."
+                });
+            }
+
+
+            if (!string.IsNullOrEmpty(request.Author))
+            {
+                book.Author = request.Author;
+            }
+
+            if (!string.IsNullOrEmpty(request.Title))
+            {
+                book.Title = request.Title;
+            }
+
+            if (!string.IsNullOrEmpty(request.Genre))
+            {
+                book.Genre = request.Genre;
+            }
+
+            return Ok(new BookResponseDto
+            {
+                IsSuccess = db.SaveChanges() > 0,
+                Message = "Book updated successfully!"
+            });
+
+        }
+
+
 
 
 
