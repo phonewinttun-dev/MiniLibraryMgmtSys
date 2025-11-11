@@ -29,7 +29,7 @@ public partial class AppDbContext : DbContext
     {
         modelBuilder.Entity<TblBook>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_book__3214EC07230026C9");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_book__3214EC07070617C8");
 
             entity.ToTable("tbl_books");
 
@@ -46,6 +46,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Genre)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.IsAvailable).HasDefaultValue(true);
             entity.Property(e => e.Title).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(getdate())")
@@ -65,7 +66,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<TblBorrowedBook>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_borr__3214EC07BBEE93E8");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_borr__3214EC071DB32A8A");
 
             entity.ToTable("tbl_borrowedBooks");
 
@@ -102,11 +103,11 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<TblUser>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_user__3214EC079AA2D30E");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_user__3214EC07AD1916B8");
 
             entity.ToTable("tbl_users");
 
-            entity.HasIndex(e => e.Email, "UQ__tbl_user__A9D10534CCBCBB69").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__tbl_user__A9D105344C3C0B40").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasMaxLength(50)

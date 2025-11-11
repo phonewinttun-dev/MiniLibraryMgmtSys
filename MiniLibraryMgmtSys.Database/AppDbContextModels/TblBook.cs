@@ -13,6 +13,8 @@ public partial class TblBook
 
     public string? Genre { get; set; }
 
+    public bool IsAvailable { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }

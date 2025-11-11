@@ -26,23 +26,24 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpGet]
         public IActionResult GetBooks()
         {
-            var result = BookQuery.ToList();
-
-            var lst = result.Select(book => new
-            {
-                book.Id,
-                book.Author,
-                book.Title,
-                book.Genre
-            }).ToList();
+            var lst = BookQuery
+                        .Select(book => new {
+                            book.Id,
+                            book.Author,
+                            book.Title,
+                            book.Genre,
+                            book.IsAvailable
+                        })
+                        .ToList();
 
             return Ok(lst);
         }
 
-        [HttpGet("{Id}")]
-        public IActionResult GetBooksById(string Id)
+        [HttpGet("{id}")]
+        public IActionResult GetBooksById(string id)
         {
-            var book = BookQuery.FirstOrDefault(book => book.Id == Id);
+            var book = BookQuery.FirstOrDefault(book => book.Id == id);
+            
             if (book is null)
             {
                 return NotFound(new BookResponseDto
@@ -57,6 +58,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 Author = book.Author,
                 Title = book.Title,
                 Genre = book.Genre,
+                IsAvailable = book.IsAvailable,
                 CreatedAt = book.CreatedAt,
                 UpdatedAt = book.UpdatedAt,
                 CreatedBy = book.CreatedBy,
@@ -74,32 +76,55 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpPost]
         public IActionResult CreateBook([FromBody] BookDto request)
         {
-            db.TblBooks.Add(new TblBook
+            if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Author))
+                return BadRequest(new BookResponseDto 
+                { 
+                    IsSuccess = false, 
+                    Message = "Author and Title are required." 
+                });
+
+            try 
             {
-                Id = Guid.NewGuid().ToString(),
-                Author = request.Author,
-                Title = request.Title,
-                Genre = request.Genre,
-                DeleteFlag = false
-            });
+                db.TblBooks.Add(new TblBook
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Author = request.Author,
+                    Title = request.Title,
+                    Genre = request.Genre,
+                    IsAvailable = true,
+                    DeleteFlag = false
+                });
+                    
+                request.CreatedAt = DateTime.Now;
 
-            var result = db.SaveChanges();
+                var result = db.SaveChanges();
 
-            string message = result > 0 ? "Book created successfully." : "Failed to create book.";
+                string message = result > 0 ? "Book created successfully." : "Failed to create book.";
 
-            BookResponseDto response = new BookResponseDto
+                BookResponseDto response = new BookResponseDto
+                {
+                    IsSuccess = result > 0,
+                    Message = message,
+                };
+
+                return Ok(response);
+            }
+
+            catch (Exception ex)
             {
-                IsSuccess = result > 0,
-                Message = message,
-            };
+                return StatusCode(500, new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "An error occurred while creating the book."
+                });
+            }
 
-            return Ok(response);
         }
 
-        [HttpPatch("id/{Id}")]
-        public IActionResult UpdateBook(string Id, [FromBody] BookDto request)
+        [HttpPatch("id/{id}")]
+        public IActionResult UpdateBook(string id, [FromBody] BookDto request)
         {
-            var book = BookQuery.FirstOrDefault(book => book.Id == Id);
+            var book = BookQuery.FirstOrDefault(book => book.Id == id);
 
             if (book is null)
             {
@@ -109,7 +134,6 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Book not found."
                 });
             }
-
 
             if (!string.IsNullOrEmpty(request.Author))
             {
@@ -126,17 +150,21 @@ namespace MiniLibraryMgmtSys.Controllers
                 book.Genre = request.Genre;
             }
 
+            book.UpdatedAt = DateTime.Now;
+
+            var result = db.SaveChanges() > 0;
+
             return Ok(new BookResponseDto
             {
-                IsSuccess = db.SaveChanges() > 0,
-                Message = "Book updated successfully!"
+                IsSuccess = result,
+                Message = result ? "Book updated successfully!" : "Failed to update book."
             });
 
         }
 
-        [HttpDelete("id/{Id}")]
-        public IActionResult DeleteBook(string Id) {
-            var book = BookQuery.FirstOrDefault(book => book.Id == Id);
+        [HttpDelete("id/{id}")]
+        public IActionResult DeleteBook(string id) {
+            var book = BookQuery.FirstOrDefault(book => book.Id == id);
             
             if (book is null)
             {
@@ -147,7 +175,9 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
+            book.IsAvailable = false;
             book.DeleteFlag = true;
+            book.UpdatedAt = DateTime.Now;
 
             return Ok(new BookResponseDto
             {
