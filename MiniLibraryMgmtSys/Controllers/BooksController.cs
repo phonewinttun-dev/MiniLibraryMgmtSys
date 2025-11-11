@@ -33,14 +33,42 @@ namespace MiniLibraryMgmtSys.Controllers
                 book.Id,
                 book.Author,
                 book.Title,
-                book.Genre,
-                book.CreatedAt,
-                book.UpdatedAt,
-                book.CreatedBy,
-                book.UpdatedBy
+                book.Genre
             }).ToList();
 
             return Ok(lst);
+        }
+
+        [HttpGet("{Id}")]
+        public IActionResult GetBooksById(string Id)
+        {
+            var book = BookQuery.FirstOrDefault(book => book.Id == Id);
+            if (book is null)
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Book not found."
+                });
+            }
+            var result = new BookDto
+            {
+                Id = book.Id,
+                Author = book.Author,
+                Title = book.Title,
+                Genre = book.Genre,
+                CreatedAt = book.CreatedAt,
+                UpdatedAt = book.UpdatedAt,
+                CreatedBy = book.CreatedBy,
+                UpdatedBy = book.UpdatedBy
+            };
+
+            return Ok(new BookResponseDto
+            {
+                IsSuccess = true,
+                Message = "Book retrieved successfully.",
+                Data = result
+            });
         }
 
         [HttpPost]
@@ -104,6 +132,28 @@ namespace MiniLibraryMgmtSys.Controllers
                 Message = "Book updated successfully!"
             });
 
+        }
+
+        [HttpDelete("id/{Id}")]
+        public IActionResult DeleteBook(string Id) {
+            var book = BookQuery.FirstOrDefault(book => book.Id == Id);
+            
+            if (book is null)
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Book not found."
+                });
+            }
+
+            book.DeleteFlag = true;
+
+            return Ok(new BookResponseDto
+            {
+                IsSuccess = db.SaveChanges() > 0,
+                Message = "Book deleted successfully!"
+            });
         }
 
 
