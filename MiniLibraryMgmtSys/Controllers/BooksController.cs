@@ -6,7 +6,6 @@ using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
 using System.Data;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using static MiniLibraryMgmtSys.DTO.BookDTO;
 
 namespace MiniLibraryMgmtSys.Controllers
 {
@@ -14,29 +13,31 @@ namespace MiniLibraryMgmtSys.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
-        private readonly AppDbContext db;
-        public BooksController()
+
+        private readonly AppDbContext _db;
+        public BooksController(AppDbContext db)
         {
-            db = new AppDbContext();
+            _db = db;
         }
 
-        //Book Table Query
-        private IQueryable<TblBook> BookQuery => db.TblBooks.Where(book => book.DeleteFlag == false).AsNoTracking();
 
-        private IQueryable<TblBook> AvailableBooks => db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false).AsNoTracking();
+        //Book Table Query
+        private IQueryable<TblBook> BookQuery => _db.TblBooks.AsNoTracking().Where(book => book.DeleteFlag == false);
+
+        //private IQueryable<TblBook> AvailableBooks => _db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false).AsNoTracking();
 
         // To check if the Book table is empty
         [HttpGet("getAllBooks")]
-        public IActionResult GetBooks()
+        public IActionResult GetAllBooks()
         {
             var lst = BookQuery
-                        .Select(book => new
+                        .Select(book => new BookDto
                         {
-                            book.Id,
-                            book.Author,
-                            book.Title,
-                            book.Genre,
-                            book.IsAvailable
+                            Id = book.Id,
+                            Author = book.Author,
+                            Title = book.Title,
+                            Genre = book.Genre,
+                            IsAvailable = book.IsAvailable
                         })
                         .ToList();
 
@@ -63,11 +64,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 Author = book.Author,
                 Title = book.Title,
                 Genre = book.Genre,
-                IsAvailable = book.IsAvailable,
-                CreatedAt = book.CreatedAt,
-                UpdatedAt = book.UpdatedAt,
-                CreatedBy = book.CreatedBy,
-                UpdatedBy = book.UpdatedBy
+                IsAvailable = book.IsAvailable
             };
 
             return Ok(new BookResponseDto
@@ -90,7 +87,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                db.TblBooks.Add(new TblBook
+                _db.TblBooks.Add(new TblBook
                 {
                     Id = Guid.NewGuid().ToString(),
                     Author = request.Author,
@@ -102,7 +99,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
                 request.CreatedAt = DateTime.Now;
 
-                var result = db.SaveChanges();
+                var result = _db.SaveChanges();
 
                 string message = result > 0 ? "Book created successfully." : "Failed to create book.";
 
@@ -129,7 +126,7 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpPatch("updateBook/{id}")]
         public IActionResult UpdateBook(string id, [FromBody] BookDto request)
         {
-            var book = BookQuery.FirstOrDefault(book => book.Id == id);
+            var book = _db.TblBooks.FirstOrDefault(book => book.Id == id);
 
             if (book is null)
             {
@@ -157,7 +154,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
             book.UpdatedAt = DateTime.Now;
 
-            var result = db.SaveChanges() > 0;
+            var result = _db.SaveChanges() > 0;
 
             return Ok(new BookResponseDto
             {
@@ -170,7 +167,7 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpDelete("deleteBook/{id}")]
         public IActionResult DeleteBook(string id)
         {
-            var book = BookQuery.FirstOrDefault(book => book.Id == id);
+            var book = _db.TblBooks.FirstOrDefault(book => book.Id == id && book.DeleteFlag == false);
 
             if (book is null)
             {
@@ -185,17 +182,20 @@ namespace MiniLibraryMgmtSys.Controllers
             book.DeleteFlag = true;
             book.UpdatedAt = DateTime.Now;
 
+            var result = _db.SaveChanges() > 0;
+
             return Ok(new BookResponseDto
             {
-                IsSuccess = db.SaveChanges() > 0,
-                Message = "Book deleted successfully!"
+                IsSuccess = result,
+                Message = result ? "Book deleted successfully!" : "Failed to delete book."
             });
         }
 
         [HttpGet("getAvailableBooks")]
         public IActionResult GetAvailableBooks()
         {
-            var lst = AvailableBooks
+            var availableBooks = BookQuery
+                        .Where(book => book.IsAvailable)
                         .Select(book => new
                         {
                             book.Id,
@@ -206,39 +206,39 @@ namespace MiniLibraryMgmtSys.Controllers
                         })
                         .ToList();
 
-            return Ok(lst);
+            return Ok(availableBooks);
 
         }
 
-        [HttpPatch("setUnavailable/{id}")]
-        public IActionResult SetUnavailable(string id)
-        {
-            var book = BookQuery.FirstOrDefault(book => book.Id == id);
+        //[HttpPatch("setUnavailable/{id}")]
+        //public IActionResult SetUnavailable(string id)
+        //{
+        //    var book = BookQuery.FirstOrDefault(book => book.Id == id);
 
-            if (book is null)
-            {
-                return NotFound(new BookResponseDto
-                {
-                    IsSuccess = false,
-                    Message = "Book not found."
-                });
-            }
+        //    if (book is null)
+        //    {
+        //        return NotFound(new BookResponseDto
+        //        {
+        //            IsSuccess = false,
+        //            Message = "Book not found."
+        //        });
+        //    }
 
-            book.IsAvailable = false;
-            book.UpdatedAt = DateTime.Now;
+        //    book.IsAvailable = false;
+        //    book.UpdatedAt = DateTime.Now;
 
-            return Ok(new BookResponseDto
-            {
-                IsSuccess = db.SaveChanges() > 0,
-                Message = "Book status updated successfully!"
-            });
+        //    return Ok(new BookResponseDto
+        //    {
+        //        IsSuccess = _db.SaveChanges() > 0,
+        //        Message = "Book status updated successfully!"
+        //    });
 
-        }
+        //}
 
         [HttpPatch("setBookStatus/{id}")]
         public IActionResult SetBookStatus(string id, [FromBody] BookDto request)
         {
-            var book = BookQuery.FirstOrDefault(book => book.Id.Equals(id));
+            var book = _db.TblBooks.FirstOrDefault(book => book.Id == id && book.DeleteFlag == false);
 
             if (book is null)
             {
@@ -250,12 +250,14 @@ namespace MiniLibraryMgmtSys.Controllers
             }
 
             book.IsAvailable = request.IsAvailable;
-            book.UpdatedAt = request.UpdatedAt;
+            book.UpdatedAt = DateTime.Now;
+
+            var result = _db.SaveChanges() > 0;
 
             return Ok(new BookResponseDto
             {
-                IsSuccess = db.SaveChanges() > 0,
-                Message = "Book status updated successfully!"
+                IsSuccess = result,
+                Message = result ? "Book status updated successfully!" : "Failed to update book status."
             });
 
         }
@@ -280,12 +282,13 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpGet("searchByFilter")]
         public IActionResult SearchByFilter(string? author, string? title, string? genre)
         {
-            var query = BookQuery;
 
             if (author == null && title == null && genre == null)
             {
                 return BadRequest("You must enter one of the fields to search.");
             }
+
+            var query = BookQuery;
 
             if (!string.IsNullOrEmpty(author))
                 query = query.Where(b => b.Author.Contains(author));
@@ -315,7 +318,7 @@ namespace MiniLibraryMgmtSys.Controllers
         public IActionResult GetBooksByGenre(string genre)
         {
             var results = BookQuery
-                            .Where(book => book.Genre.ToLower() == genre.ToLower())
+                            .Where(book => book.Genre != null && book.Genre.ToLower() == genre.ToLower())
                             .Select(book => new
                             {
                                 book.Author,
