@@ -18,7 +18,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             db = new AppDbContext();
         }
-        
+
         //Book Table Query
         private IQueryable<TblBook> BookQuery =>
             db.TblBooks.Where(book => book.DeleteFlag == false);
@@ -26,11 +26,13 @@ namespace MiniLibraryMgmtSys.Controllers
         private IQueryable<TblBook> AvailableBooks =>
             db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false);
 
+        // To check if the Book table is empty
         [HttpGet("getAllBooks")]
         public IActionResult GetBooks()
         {
             var lst = BookQuery
-                        .Select(book => new {
+                        .Select(book => new
+                        {
                             book.Id,
                             book.Author,
                             book.Title,
@@ -42,11 +44,12 @@ namespace MiniLibraryMgmtSys.Controllers
             return Ok(lst);
         }
 
+        // For users to search books by ID
         [HttpGet("getBooksById/{id}")]
         public IActionResult GetBooksById(string id)
         {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
-            
+
             if (book is null)
             {
                 return NotFound(new BookResponseDto
@@ -80,13 +83,13 @@ namespace MiniLibraryMgmtSys.Controllers
         public IActionResult CreateBook([FromBody] BookDto request)
         {
             if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Author))
-                return BadRequest(new BookResponseDto 
-                { 
-                    IsSuccess = false, 
-                    Message = "Author and Title are required." 
+                return BadRequest(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Author and Title are required."
                 });
 
-            try 
+            try
             {
                 db.TblBooks.Add(new TblBook
                 {
@@ -97,7 +100,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     IsAvailable = true,
                     DeleteFlag = false
                 });
-                    
+
                 request.CreatedAt = DateTime.Now;
 
                 var result = db.SaveChanges();
@@ -166,9 +169,10 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpDelete("deleteBook/{id}")]
-        public IActionResult DeleteBook(string id) {
+        public IActionResult DeleteBook(string id)
+        {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
-            
+
             if (book is null)
             {
                 return NotFound(new BookResponseDto
@@ -190,10 +194,11 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpGet("getAvailableBooks")]
-        public IActionResult GetAvailableBooks() 
+        public IActionResult GetAvailableBooks()
         {
             var lst = AvailableBooks
-                        .Select(book => new {
+                        .Select(book => new
+                        {
                             book.Id,
                             book.Author,
                             book.Title,
@@ -207,7 +212,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpPatch("setUnavailable/{id}")]
-        public IActionResult SetUnavailable(string id) 
+        public IActionResult SetUnavailable(string id)
         {
             var book = BookQuery.FirstOrDefault(book => book.Id == id);
 
@@ -274,7 +279,7 @@ namespace MiniLibraryMgmtSys.Controllers
         //}
 
         [HttpGet("searchByFilter")]
-        public IActionResult SearchByFilter(string? author, string? title, string? genre) 
+        public IActionResult SearchByFilter(string? author, string? title, string? genre)
         {
             var query = BookQuery;
 
@@ -302,11 +307,35 @@ namespace MiniLibraryMgmtSys.Controllers
                     IsSuccess = false,
                     Message = "No books found matching the given criteria."
                 });
-            } 
+            }
 
             return Ok(results);
         }
 
+        [HttpGet("getBooksByGenre")]
+        public IActionResult GetBooksByGenre(string genre)
+        {
+            var results = BookQuery
+                            .Where(book => book.Genre.ToLower() == genre.ToLower())
+                            .Select(book => new
+                            {
+                                book.Author,
+                                book.Title,
+                                book.Genre,
+                                book.IsAvailable
+                            })
+                            .ToList();
 
+            if (!results.Any())
+            {
+                return NotFound(new BookResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "No books found in the specified genre."
+                });
+            }
+
+            return Ok(results);
         }
+    }
 }
