@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
 using System.Data;
@@ -20,11 +21,9 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         //Book Table Query
-        private IQueryable<TblBook> BookQuery =>
-            db.TblBooks.Where(book => book.DeleteFlag == false);
+        private IQueryable<TblBook> BookQuery => db.TblBooks.Where(book => book.DeleteFlag == false).AsNoTracking();
 
-        private IQueryable<TblBook> AvailableBooks =>
-            db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false);
+        private IQueryable<TblBook> AvailableBooks => db.TblBooks.Where(book => book.IsAvailable == true && book.DeleteFlag == false).AsNoTracking();
 
         // To check if the Book table is empty
         [HttpGet("getAllBooks")]
