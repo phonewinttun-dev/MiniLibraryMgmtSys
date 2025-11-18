@@ -87,7 +87,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                _db.TblBooks.Add(new TblBook
+                var newBook = new TblBook
                 {
                     Id = Guid.NewGuid().ToString(),
                     Author = request.Author,
@@ -95,7 +95,9 @@ namespace MiniLibraryMgmtSys.Controllers
                     Genre = request.Genre,
                     IsAvailable = true,
                     DeleteFlag = false
-                });
+                };
+
+                _db.TblBooks.Add(newBook);
 
                 request.CreatedAt = DateTime.Now;
 
@@ -167,7 +169,8 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpDelete("deleteBook/{id}")]
         public IActionResult DeleteBook(string id)
         {
-            var book = _db.TblBooks.FirstOrDefault(book => book.Id == id && book.DeleteFlag == false);
+            var book = _db.TblBooks
+                .FirstOrDefault(book => book.Id == id && book.DeleteFlag == false);
 
             if (book is null)
             {
