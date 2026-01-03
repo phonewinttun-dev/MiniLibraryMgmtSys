@@ -30,8 +30,8 @@ namespace MiniLibraryMgmtSys.Controllers
                     _db.TblBooks.AsNoTracking()
                     .Where(book => book.DeleteFlag == false);
 
-        // GET: api/Books/allBooks
-        [HttpGet("allBooks")]
+        // GET: allBooks
+        [HttpGet]
         public async Task<IActionResult> GetAllBooks()
         {
             var allBookLst = await _db.TblBooks
@@ -54,7 +54,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         // GET: booksById/{id}
-        [HttpGet("booksById/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetBooksById(string id)
         {
             // ID validation
@@ -104,8 +104,31 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
+        // GET: booksAvailable
+        [HttpGet]
+        public async Task<IActionResult> GetAvailableBooks()
+        {
+            var availableBooks = await AvailableBookQuery
+                .Select(book => new BookDto
+                {
+                    Id = book.Id,
+                    Author = book.Author,
+                    Title = book.Title,
+                    Genre = book.Genre,
+                    IsAvailable = book.IsAvailable
+                })
+                .ToListAsync();
+
+            return Ok(new ApiResponse<List<BookDto>>
+            {
+                IsSuccess = true,
+                Message = "Books retrieved successfully.",
+                Data = availableBooks
+            });
+        }
+
         // POST: createBook
-        [HttpPost("bookCreate")]
+        [HttpPost]
         public async Task<IActionResult> CreateBook([FromBody] CreateBookDto request)
         {
             if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Author))
@@ -132,7 +155,7 @@ namespace MiniLibraryMgmtSys.Controllers
             {
 
                 _db.TblBooks.Add(newBook);
-                var result = await _db.SaveChangesAsync();
+                var createdBookResult = await _db.SaveChangesAsync();
 
                 var createdBook = new BookDto
                 {
@@ -146,12 +169,17 @@ namespace MiniLibraryMgmtSys.Controllers
                 return CreatedAtAction(
                             nameof(GetBooksById),
                             new { id = newBook.Id },
-                            createdBook
+                            new ApiResponse<BookDto>
+                            {
+                                IsSuccess = createdBookResult > 0,
+                                Message = createdBookResult > 0 ? "Book created successfully!" : "Failed to create book.",
+                                Data = createdBook  
+                            }
                         );
             }
             catch
             {
-                return StatusCode(500, new BookResponseDto
+                return StatusCode(500, new ApiResponse<CreateBookDto>
                 {
                     IsSuccess = false,
                     Message = "An error occurred while creating the book."
@@ -159,15 +187,17 @@ namespace MiniLibraryMgmtSys.Controllers
             }
         }
 
-        // PATCH: updateBook/{id}
-        [HttpPatch("bookUpdate/{id}")]
-        public async Task<IActionResult> UpdateBook(string id, [FromBody] BookDto request)
+        // PATCH: partial update books/{id}
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateBook(string id, [FromBody] UpdateBookDto request)
         {
-            var book = await _db.TblBooks.FirstOrDefaultAsync(b => b.Id == id);
+            var book = await _db.TblBooks
+                .Where(b => !b.DeleteFlag)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (book is null)
             {
-                return NotFound(new BookResponseDto
+                return NotFound(new ApiResponse<UpdateBookDto>
                 {
                     IsSuccess = false,
                     Message = "Book not found."
@@ -183,64 +213,64 @@ namespace MiniLibraryMgmtSys.Controllers
             if (!string.IsNullOrEmpty(request.Genre))
                 book.Genre = request.Genre;
 
-            book.UpdatedAt = DateTime.Now;
+            book.UpdatedAt = DateTime.UtcNow;
 
-            var result = await _db.SaveChangesAsync() > 0;
+            var patchedBookResult = await _db.SaveChangesAsync() > 0;
 
-            return Ok(new BookResponseDto
+            return Ok(new ApiResponse<BookDto>
             {
-                IsSuccess = result,
-                Message = result ? "Book updated successfully!" : "Failed to update book."
+                IsSuccess = patchedBookResult,
+                Message = patchedBookResult ? "Book updated successfully!" : "Failed to update book.",
+                //Data = new BookDto
+                //{
+                //    Id = book.Id,
+                //    Author = book.Author,
+                //    Title = book.Title,
+                //    Genre = book.Genre,
+                //    IsAvailable = book.IsAvailable
+                //}
             });
         }
 
         // DELETE: deleteBook/{id}
-        [HttpDelete("deleteBook/{id}")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new ApiResponse<Object>
+                {
+                    IsSuccess = false,
+                    Message = "Book id is required."
+                });
+            }
+
             var book = await _db.TblBooks
                 .FirstOrDefaultAsync(book => book.Id == id && !book.DeleteFlag);
 
             if (book is null)
             {
-                return NotFound(new BookResponseDto
+                return NotFound(new ApiResponse<Object>
                 {
                     IsSuccess = false,
                     Message = "Book not found."
                 });
             }
 
+            //soft delete action
             book.IsAvailable = false;
             book.DeleteFlag = true;
-            book.UpdatedAt = DateTime.Now;
+            book.UpdatedAt = DateTime.UtcNow;
 
             var result = await _db.SaveChangesAsync() > 0;
 
-            return Ok(new BookResponseDto
+            return Ok(new ApiResponse<Object>
             {
                 IsSuccess = result,
                 Message = result ? "Book deleted successfully!" : "Failed to delete book."
             });
         }
 
-        // GET: getAvailableBooks
-        [HttpGet("getAvailableBooks")]
-        public async Task<IActionResult> GetAvailableBooks()
-        {
-            var availableBooks = await AvailableBookQuery
-                .Where(book => book.IsAvailable)
-                .Select(book => new
-                {
-                    book.Id,
-                    book.Author,
-                    book.Title,
-                    book.Genre,
-                    book.IsAvailable
-                })
-                .ToListAsync();
-
-            return Ok(availableBooks);
-        }
 
         // PATCH: setBookStatus/{id}
         [HttpPatch("setBookStatus/{id}")]
