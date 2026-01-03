@@ -1,0 +1,6 @@
+@MiniLibraryMgmtSys.Domain_HostAddress = http://localhost:5126
+
+GET {{MiniLibraryMgmtSys.Domain_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

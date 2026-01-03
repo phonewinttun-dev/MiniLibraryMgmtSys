@@ -1,17 +1,44 @@
-﻿namespace MiniLibraryMgmtSys.DTO
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MiniLibraryMgmtSys.DTO
 {
     public class BookDto
     {
-        public string? Id { get; set; }
+        public string? Id { get; set; } = null!;
+        [Required]
+        public string Author { get; set; } = null!;
+        [Required]
+        public string Title { get; set; } = null!;
+        public string? Genre { get; set; }
+        public bool IsAvailable { get; set; }
+        //public DateTime CreatedAt { get; set; }
+        //public DateTime UpdatedAt { get; set; }
+        //public string? CreatedBy { get; set; }
+        //public string? UpdatedBy { get; set; }
+    }
+
+    public class CreateBookDto
+    {
+        public string Author { get; set; } = null!;
+        public string Title { get; set; } = null!;
+        public string? Genre { get; set; }
+        //public string? CreatedBy { get; set; }
+    }
+
+    public class UpdateBookDto
+    {
         public string? Author { get; set; }
         public string? Title { get; set; }
         public string? Genre { get; set; }
-        public bool IsAvailable { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public string? CreatedBy { get; set; }
-        public string? UpdatedBy { get; set; }
-        public bool DeleteFlag { get; set; }
+        public bool? IsAvailable { get; set; }
+        //public string? UpdatedBy { get; set; }
+    }
+
+    public class ApiResponse<T>
+    {
+        public bool IsSuccess { get; set; }
+        public string Message { get; set; } = null!;
+        public T? Data { get; set; }
     }
 
     public class BookResponseDto
