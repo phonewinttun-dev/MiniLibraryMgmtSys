@@ -34,6 +34,19 @@ namespace MiniLibraryMgmtSys.DTO
         //public string? UpdatedBy { get; set; }
     }
 
+    public class UpdateBookAvailabilityDto
+    {
+        public bool IsAvailable { get; set; }
+    }
+
+
+    public class SearchBookDto
+    {
+        public string? Author { get; set; }
+        public string? Title { get; set; }
+        public string? Genre { get; set; }
+    }
+
     public class ApiResponse<T>
     {
         public bool IsSuccess { get; set; }
