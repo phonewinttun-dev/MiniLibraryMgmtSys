@@ -3,8 +3,6 @@ using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 
-
-
 try { 
     var builder = WebApplication.CreateBuilder(args);
 

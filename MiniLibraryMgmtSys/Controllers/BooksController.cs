@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
+﻿//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Http.HttpResults;
+using Azure.Core;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
+//using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
 using System.Data;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+//using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
 
 namespace MiniLibraryMgmtSys.Controllers
 {
@@ -41,7 +43,8 @@ namespace MiniLibraryMgmtSys.Controllers
                     Author = book.Author,
                     Title = book.Title,
                     Genre = book.Genre,
-                    IsAvailable = book.IsAvailable
+                    IsAvailable = book.IsAvailable,
+                    DeleteFlag = book.DeleteFlag,
                 })
                 .ToListAsync();
 
@@ -124,6 +127,51 @@ namespace MiniLibraryMgmtSys.Controllers
                 IsSuccess = true,
                 Message = "Books retrieved successfully.",
                 Data = availableBooks
+            });
+        }
+
+        // GET: searchByFilter
+        [HttpGet("booksSearch")]
+        public async Task<IActionResult> SearchByFilter(SearchBookDto searchRequest)
+        {
+            if (string.IsNullOrWhiteSpace(searchRequest.Author) &&
+                string.IsNullOrWhiteSpace(searchRequest.Title) &&
+                string.IsNullOrWhiteSpace(searchRequest.Genre))
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "At least one search filter must be provided."
+                });
+            }
+
+            var query = ExistingBookQuery;
+
+            if (!string.IsNullOrWhiteSpace(searchRequest.Author))
+                query = query.Where(b => b.Author.Contains(searchRequest.Author.Trim()));
+
+            if (!string.IsNullOrEmpty(searchRequest.Title))
+                query = query.Where(b => b.Title.Contains(searchRequest.Title.Trim()));
+
+            if (!string.IsNullOrEmpty(searchRequest.Genre))
+                query = query.Where(b => b.Genre.Contains(searchRequest.Genre.Trim()));
+
+            var results = await query
+                .Select(b => new BookDto
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Author = b.Author,
+                    Genre = b.Genre,
+                    IsAvailable = b.IsAvailable
+                })
+                .ToListAsync();
+
+            return Ok(new ApiResponse<List<BookDto>>
+            {
+                IsSuccess = true,
+                Message = "Search completed.",
+                Data = results
             });
         }
 
@@ -282,6 +330,61 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
+        [HttpPatch("booksRestore/{id}")]
+        public async Task<IActionResult> RestoreBooks(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest(new ApiResponse<Object>
+                {
+                    IsSuccess = false,
+                    Message = "Book id is required."
+                });
+            }
+
+            var book = await _db.TblBooks
+                .FirstOrDefaultAsync(book => book.Id == id && book.DeleteFlag);
+
+            if (book is null)
+            {
+                return NotFound(new ApiResponse<BookDto>
+                {
+                    IsSuccess = false,
+                    Message = "Book not found."
+                });
+            }
+
+            book.DeleteFlag = false;
+            book.IsAvailable = true;
+            book.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _db.SaveChangesAsync() > 0;
+
+            try
+            {
+                var updatedStatus = new BookDto
+                {
+                    DeleteFlag = book.DeleteFlag,
+                    IsAvailable = book.IsAvailable
+                };
+
+                return Ok(new ApiResponse<BookDto>
+                {
+                    IsSuccess = result,
+                    Message = result ? "Book restored successfully!" : "Failed to restore book."
+                });
+            }
+            catch
+            {
+                return StatusCode(500, new ApiResponse<BookDto>
+                {
+                    IsSuccess = false,
+                    Message = "An error occurred while restoring the book."
+                });
+            }
+
+        }
+
         // for borrowing and returning books
         // PATCH: setBookStatus/{id}
         [HttpPatch("booksStatus/{id}")]
@@ -296,12 +399,12 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
-            var book = await ExistingBookQuery
-                .FirstOrDefaultAsync(book => book.Id == id);
+            var book = await _db.TblBooks
+                .FirstOrDefaultAsync(book => book.Id == id && !book.DeleteFlag);
 
             if (book is null)
             {
-                return NotFound(new ApiResponse<Object>
+                return NotFound(new ApiResponse<BookDto>
                 {
                     IsSuccess = false,
                     Message = "Book not found."
@@ -311,19 +414,24 @@ namespace MiniLibraryMgmtSys.Controllers
             book.IsAvailable = request.IsAvailable;
             book.UpdatedAt = DateTime.UtcNow;
 
+            var result = await _db.SaveChangesAsync() > 0;
+
             try
             {
-                var result = await _db.SaveChangesAsync() > 0;
-
-                return Ok(new ApiResponse<Object>
+                var updatedStatus = new BookDto
+                {
+                    IsAvailable = request.IsAvailable
+                };
+                
+                return Ok(new ApiResponse<BookDto>
                 {
                     IsSuccess = result,
-                    Message = "Book status updated successfully!"
+                    Message = result ? "Book status updated successfully!" : "Failed to update status"
                 });
             }
             catch
             {
-                return StatusCode(500, new ApiResponse<Object>
+                return StatusCode(500, new ApiResponse<BookDto>
                 {
                     IsSuccess = false,
                     Message = "An error occurred while updating the book status."
@@ -332,50 +440,7 @@ namespace MiniLibraryMgmtSys.Controllers
             
         }
 
-        // GET: searchByFilter
-        [HttpGet("booksSearch")]
-        public async Task<IActionResult> SearchByFilter(SearchBookDto searchRequest)
-        {
-            if (string.IsNullOrWhiteSpace(searchRequest.Author) &&
-                string.IsNullOrWhiteSpace(searchRequest.Title) &&
-                string.IsNullOrWhiteSpace(searchRequest.Genre))
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "At least one search filter must be provided."
-                });
-            }
-
-            var query = ExistingBookQuery;
-
-            if (!string.IsNullOrWhiteSpace(searchRequest.Author))
-                query = query.Where(b => b.Author.Contains(searchRequest.Author.Trim()));
-
-            if (!string.IsNullOrEmpty(searchRequest.Title))
-                query = query.Where(b => b.Title.Contains(searchRequest.Title.Trim()));
-
-            if (!string.IsNullOrEmpty(searchRequest.Genre))
-                query = query.Where(b => b.Genre.Contains(searchRequest.Genre.Trim()));
-
-            var results = await query
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    Author = b.Author,
-                    Genre = b.Genre
-                })
-                .ToListAsync();
-
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Search completed.",
-                Data = results
-            });
-        }
-
+        
 
     }
 
