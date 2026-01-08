@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
+using MiniLibraryMgmtSys.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 
@@ -24,6 +25,9 @@ try {
     // Add services to the container.
 
     builder.Services.AddControllers();
+    //User Service Registration
+    builder.Services.AddScoped<UserService>();
+
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();

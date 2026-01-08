@@ -23,17 +23,9 @@ public partial class TblUser
 
     public bool DeleteFlag { get; set; }
 
-    public virtual TblUser? CreatedByNavigation { get; set; }
-
-    public virtual ICollection<TblUser> InverseCreatedByNavigation { get; set; } = new List<TblUser>();
-
-    public virtual ICollection<TblUser> InverseUpdatedByNavigation { get; set; } = new List<TblUser>();
-
     public virtual ICollection<TblBook> TblBookCreatedByNavigations { get; set; } = new List<TblBook>();
 
     public virtual ICollection<TblBook> TblBookUpdatedByNavigations { get; set; } = new List<TblBook>();
 
     public virtual ICollection<TblBorrowedBook> TblBorrowedBooks { get; set; } = new List<TblBorrowedBook>();
-
-    public virtual TblUser? UpdatedByNavigation { get; set; }
 }

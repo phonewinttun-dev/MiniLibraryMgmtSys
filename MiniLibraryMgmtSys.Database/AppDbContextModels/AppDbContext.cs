@@ -21,11 +21,15 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<TblUser> TblUsers { get; set; }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=.;Database=MiniLibraryMgmtSys;User ID=sa;Password=sasa@123;TrustServerCertificate=True;");
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TblBook>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_book__3214EC07070617C8");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_book__3214EC07E02A0D97");
 
             entity.ToTable("tbl_books");
 
@@ -62,7 +66,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<TblBorrowedBook>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_borr__3214EC071DB32A8A");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_borr__3214EC07E9D2A6B1");
 
             entity.ToTable("tbl_borrowedBooks");
 
@@ -99,11 +103,11 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<TblUser>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_user__3214EC07AD1916B8");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_user__3214EC078B82C130");
 
             entity.ToTable("tbl_users");
 
-            entity.HasIndex(e => e.Email, "UQ__tbl_user__A9D105344C3C0B40").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__tbl_user__A9D1053408E1C262").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasMaxLength(50)
@@ -125,14 +129,6 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.UpdatedBy)
                 .HasMaxLength(50)
                 .IsUnicode(false);
-
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.InverseCreatedByNavigation)
-                .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK_Users_CreatedBy");
-
-            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.InverseUpdatedByNavigation)
-                .HasForeignKey(d => d.UpdatedBy)
-                .HasConstraintName("FK_Users_UpdatedBy");
         });
 
         OnModelCreatingPartial(modelBuilder);

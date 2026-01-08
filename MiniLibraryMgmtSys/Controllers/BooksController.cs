@@ -330,6 +330,8 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
+        // To restore soft-deleted books
+        // PATCH: booksRestore/{id}
         [HttpPatch("booksRestore/{id}")]
         public async Task<IActionResult> RestoreBooks(string id)
         {
