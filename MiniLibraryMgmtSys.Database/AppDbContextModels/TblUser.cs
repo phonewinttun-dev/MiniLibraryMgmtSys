@@ -17,9 +17,11 @@ public partial class TblUser
 
     public DateTime UpdatedAt { get; set; }
 
-    public string? CreatedBy { get; set; }
+    public DateTime? LastLoginDate { get; set; }
 
     public string? UpdatedBy { get; set; }
+
+    public bool IsActive { get; set; }
 
     public bool DeleteFlag { get; set; }
 

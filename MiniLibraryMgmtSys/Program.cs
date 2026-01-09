@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
+using System.Text;
 
 try { 
     var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +24,9 @@ try {
         })
     .CreateLogger();
 
+
+    builder.Services.AddAuthorization();
+
     builder.Services.AddSerilog();
     // Add services to the container.
 
@@ -32,13 +38,40 @@ try {
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
+        };
+    });
+
+
 
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
         options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection"));
     });
 
+    // Middleware configuration
     var app = builder.Build();
+
+    app.UseRouting();
+    app.UseAuthentication();    // Cookie authentication 
+    app.UseAuthorization();     // User permissions 
+
+    app.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())

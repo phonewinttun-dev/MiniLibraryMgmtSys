@@ -29,7 +29,7 @@ public partial class AppDbContext : DbContext
     {
         modelBuilder.Entity<TblBook>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_book__3214EC07E02A0D97");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_book__3214EC078B9DCB48");
 
             entity.ToTable("tbl_books");
 
@@ -66,7 +66,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<TblBorrowedBook>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_borr__3214EC07E9D2A6B1");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_borr__3214EC07866DFE88");
 
             entity.ToTable("tbl_borrowedBooks");
 
@@ -103,11 +103,11 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<TblUser>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__tbl_user__3214EC078B82C130");
+            entity.HasKey(e => e.Id).HasName("PK__tbl_user__3214EC0711724D75");
 
             entity.ToTable("tbl_users");
 
-            entity.HasIndex(e => e.Email, "UQ__tbl_user__A9D1053408E1C262").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__tbl_user__A9D10534AD071FD8").IsUnique();
 
             entity.Property(e => e.Id)
                 .HasMaxLength(50)
@@ -115,12 +115,11 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.CreatedBy)
-                .HasMaxLength(50)
-                .IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastLoginDate).HasColumnType("datetime");
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Password).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
