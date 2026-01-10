@@ -46,7 +46,8 @@ namespace MiniLibraryMgmtSys.Controllers
                 token,
                 user.Id,
                 user.Name,
-                user.Email
+                user.Email,
+                user.Role
             });
         }
 
@@ -58,7 +59,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Email, user.Email),
-            //new Claim(ClaimTypes.Role, user.Role)
+            new Claim(ClaimTypes.Role, user.Role)
         };
 
             var key = new SymmetricSecurityKey(

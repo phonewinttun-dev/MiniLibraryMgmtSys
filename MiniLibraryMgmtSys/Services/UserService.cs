@@ -30,7 +30,6 @@ namespace MiniLibraryMgmtSys.Services
                 .ToListAsync();
         }
 
-
         public async Task<TblUser?> GetByIdAsync(string id)
         {
             return await _db.TblUsers
