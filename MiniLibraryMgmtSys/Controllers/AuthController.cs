@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTOs;
+using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -15,31 +18,43 @@ namespace MiniLibraryMgmtSys.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _db;
-        private readonly IConfiguration _config;
+        private readonly UserService _userService;
+        private readonly GenerateJwtToken _jwtToken;
 
-        public AuthController(AppDbContext db, IConfiguration config)
+        public AuthController(
+            UserService userService,
+            GenerateJwtToken jwtToken)
         {
-            _db = db;
-            _config = config;
+            _userService = userService;
+            _jwtToken = jwtToken;
         }
 
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(RegisterDTO dto)
+        {
+            var userId = await _userService.RegisterUserAsync(dto);
+
+            if (userId == null)
+                return BadRequest("Email already exists.");
+
+            return Ok(new
+            {
+                message = "Registration successful",
+                userId
+            });
+        }
+
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDTO dto)
         {
-            var user = await _db.TblUsers
-                .FirstOrDefaultAsync(u =>
-                    u.Email == dto.Email &&
-                    !u.DeleteFlag &&
-                    u.IsActive);
+            var user = await _userService.ValidateUserAsync(dto.Email, dto.Password);
 
             if (user == null)
                 return Unauthorized("Invalid credentials");
 
-            if (dto.Password == null || dto.Password != user.Password  )
-                return Unauthorized("Invalid credentials");
-
-            var token = GenerateJwtToken(user);
+            var token = _jwtToken.GenerateAccessToken(user);
 
             return Ok(new
             {
@@ -51,35 +66,6 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
-        private string GenerateJwtToken(TblUser user)
-        {
-            var jwt = _config.GetSection("Jwt");
-
-            var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role)
-        };
-
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwt["Key"]!)
-            );
-
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: jwt["Issuer"],
-                audience: jwt["Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(
-                    int.Parse(jwt["ExpireMinutes"]!)
-                ),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
     }
 
 

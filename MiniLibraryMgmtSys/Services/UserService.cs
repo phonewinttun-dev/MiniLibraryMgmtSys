@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.DTOs;
+using MiniLibraryMgmtSys.Infrastructure;
 using System.Runtime.CompilerServices;
 
 namespace MiniLibraryMgmtSys.Services
@@ -33,7 +34,6 @@ namespace MiniLibraryMgmtSys.Services
             return await ExistingUser.AnyAsync(u =>
                 u.Email.ToLower() == email);
         }
-
 
         public async Task<List<UserResponseDTO>> GetAllUsersAsync()
         {
@@ -79,7 +79,7 @@ namespace MiniLibraryMgmtSys.Services
                 Id = Guid.NewGuid().ToString(),
                 Name = dto.Name,
                 Email = dto.Email.Trim().ToLower(),
-                Password = dto.Password,
+                Password = PasswordHasher.Hash(dto.Password),
                 Role = dto.Role,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -107,7 +107,7 @@ namespace MiniLibraryMgmtSys.Services
                 Id = Guid.NewGuid().ToString(),
                 Name = dto.Name.Trim(),
                 Email = dto.Email.Trim().ToLower(),
-                Password = dto.Password,
+                Password = PasswordHasher.Hash(dto.Password),
                 Role = "Member",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -161,6 +161,25 @@ namespace MiniLibraryMgmtSys.Services
 
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<TblUser?> ValidateUserAsync(string email, string password)
+        {
+            email = email.Trim().ToLower();
+
+            var user = await _db.TblUsers
+                .FirstOrDefaultAsync(u =>
+                    u.Email == email &&
+                    !u.DeleteFlag &&
+                    u.IsActive);
+
+            if (user == null)
+                return null;
+
+            if (!PasswordHasher.Verify(password, user.Password))
+                return null;
+
+            return user;
         }
     }
 }
