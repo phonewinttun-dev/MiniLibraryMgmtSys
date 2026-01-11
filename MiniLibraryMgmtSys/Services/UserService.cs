@@ -68,11 +68,15 @@ namespace MiniLibraryMgmtSys.Services
         public async Task<TblUser?> CreateUserAsync(CreateUserDTO dto)
         {
             // Prevent duplicate email
-
             var emailExists = await EmailExistsAsync(dto.Email);
 
             if (emailExists)
                 return null;
+
+            var allowedRoles = new[] { "Member", "Admin", "Librarian" };
+            var role = string.IsNullOrWhiteSpace(dto.Role) ? "Member" : dto.Role;
+            if (!allowedRoles.Contains(role))
+                role = "Member";
 
             var user = new TblUser
             {
@@ -80,9 +84,10 @@ namespace MiniLibraryMgmtSys.Services
                 Name = dto.Name,
                 Email = dto.Email.Trim().ToLower(),
                 Password = PasswordHasher.Hash(dto.Password),
-                Role = dto.Role,
+                Role = role,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                IsActive = true, 
                 DeleteFlag = false
             };
 
@@ -100,7 +105,11 @@ namespace MiniLibraryMgmtSys.Services
 
             if (emailExists)
                 return null;
-
+            
+            var allowedRoles = new[] { "Member", "Admin", "Librarian" };
+            var role = string.IsNullOrWhiteSpace(dto.Role) ? "Member" : dto.Role;
+            if (!allowedRoles.Contains(role))
+                role = "Member";
 
             var user = new TblUser
             {
@@ -108,9 +117,10 @@ namespace MiniLibraryMgmtSys.Services
                 Name = dto.Name.Trim(),
                 Email = dto.Email.Trim().ToLower(),
                 Password = PasswordHasher.Hash(dto.Password),
-                Role = "Member",
+                Role = role,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                IsActive = true,
                 DeleteFlag = false
             };
 

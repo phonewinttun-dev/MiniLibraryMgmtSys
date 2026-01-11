@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
+using MiniLibraryMgmtSys.Infrastructure;
 using MiniLibraryMgmtSys.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
@@ -24,15 +25,14 @@ try {
         })
     .CreateLogger();
 
-
-    builder.Services.AddAuthorization();
-
     builder.Services.AddSerilog();
     // Add services to the container.
 
     builder.Services.AddControllers();
     //User Service Registration
     builder.Services.AddScoped<UserService>();
+    builder.Services.AddScoped<GenerateJwtToken>();
+
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
@@ -55,7 +55,7 @@ try {
         };
     });
 
-
+    builder.Services.AddAuthorization();
 
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
@@ -66,7 +66,7 @@ try {
     var app = builder.Build();
 
     app.UseRouting();
-    app.UseAuthentication();    // Cookie authentication 
+    app.UseAuthentication();    // JWT authentication 
     app.UseAuthorization();     // User permissions 
 
     app.MapControllerRoute(

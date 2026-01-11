@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Services;
 
@@ -6,6 +7,7 @@ namespace MiniLibraryMgmtSys.Controllers
 {
     [ApiController]
     [Route("api/users")]
+    [Authorize(Roles = "Admin")]
     public class UsersController : ControllerBase
     {
         private readonly UserService _userService;

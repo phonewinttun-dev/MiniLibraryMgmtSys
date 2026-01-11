@@ -1,16 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
 using MiniLibraryMgmtSys.Services;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+
 
 namespace MiniLibraryMgmtSys.Controllers
 {
@@ -58,6 +51,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
             return Ok(new
             {
+                message = "Login successful",
                 token,
                 user.Id,
                 user.Name,
