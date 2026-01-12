@@ -11,12 +11,12 @@ namespace MiniLibraryMgmtSys.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly GenerateJwtToken _jwtToken;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
-            UserService userService,
+            IUserService userService,
             GenerateJwtToken jwtToken,
             ILogger<AuthController> logger)
         {
@@ -33,7 +33,7 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 _logger.LogInformation("Registration attempt for: {Email}", dto.Email);
 
-                var userId = await _userService.RegisterUserAsync(dto);
+                var userId = await _userService.RegisterAsync(dto);
 
                 if (userId == null)
                 {
@@ -92,6 +92,8 @@ namespace MiniLibraryMgmtSys.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+
 
 
     }

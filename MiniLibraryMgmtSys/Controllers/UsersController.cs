@@ -10,15 +10,15 @@ namespace MiniLibraryMgmtSys.Controllers
     [Authorize(Roles = "Admin")]
     public class UsersController : ControllerBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
 
-        public UsersController(UserService userService)
+        public UsersController(IUserService userService)
         {
             _userService = userService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAll()
         {
             var users = await _userService.GetAllUsersAsync();
 
@@ -31,7 +31,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(string id)
+        public async Task<IActionResult> GetById(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new ApiResponse<object>
@@ -67,7 +67,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Invalid user data."
                 });
 
-            var user = await _userService.CreateUserAsync(dto);
+            var user = await _userService.CreateAsync(dto);
 
             if (user == null)
                 return Conflict(new ApiResponse<object>
@@ -76,7 +76,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Email already exists."
                 });
 
-            return CreatedAtAction(nameof(GetUserById), new { id = user.Id },
+            return CreatedAtAction(nameof(GetById), new { id = user.Id },
                 new ApiResponse<object>
                 {
                     IsSuccess = true,
@@ -95,7 +95,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
-            var success = await _userService.UpdateUserAsync(id, dto);
+            var success = await _userService.UpdateAsync(id, dto);
 
             if (!success)
                 return NotFound(new ApiResponse<object>
@@ -121,7 +121,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
-            var success = await _userService.SoftDeleteUserAsync(id);
+            var success = await _userService.SoftDeleteAsync(id);
 
             if (!success)
                 return NotFound(new ApiResponse<object>

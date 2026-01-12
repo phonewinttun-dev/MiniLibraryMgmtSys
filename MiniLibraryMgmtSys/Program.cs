@@ -29,8 +29,11 @@ try {
     // Add services to the container.
 
     builder.Services.AddControllers();
+    //Book Service Registration
+    builder.Services.AddScoped<IBookService, BookService>();
     //User Service Registration
-    builder.Services.AddScoped<UserService>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    //JWT Tokens Registration
     builder.Services.AddScoped<GenerateJwtToken>();
 
 

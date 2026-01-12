@@ -6,61 +6,42 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
+using MiniLibraryMgmtSys.Services;
 using System.Data;
 //using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 
 namespace MiniLibraryMgmtSys.Controllers
 {
-    [Route("api/books")]
     [ApiController]
+    [Route("api/books")]
     public class BooksController : ControllerBase
     {
+        private readonly IBookService _bookService;
 
-        private readonly AppDbContext _db;
-        public BooksController(AppDbContext db)
+        public BooksController(IBookService bookService)
         {
-            _db = db;
+            _bookService = bookService;
         }
 
-
-        //Book Table Query
-        private IQueryable<TblBook> AvailableBookQuery =>
-            _db.TblBooks.AsNoTracking()
-            .Where(book => book.DeleteFlag == false && book.IsAvailable == true);
-        private IQueryable<TblBook> ExistingBookQuery => 
-                    _db.TblBooks.AsNoTracking()
-                    .Where(book => book.DeleteFlag == false);
-
-        // GET: allBooks
+        // GET: api/books/allBooks
         [HttpGet("allBooks")]
         public async Task<IActionResult> GetAllBooks()
         {
-            var allBookLst = await _db.TblBooks
-                .Select(book => new BookDto
-                {
-                    Id = book.Id,
-                    Author = book.Author,
-                    Title = book.Title,
-                    Genre = book.Genre,
-                    IsAvailable = book.IsAvailable,
-                    DeleteFlag = book.DeleteFlag,
-                })
-                .ToListAsync();
+            var books = await _bookService.GetAllBooksAsync();
 
             return Ok(new ApiResponse<List<BookDto>>
             {
                 IsSuccess = true,
                 Message = "Books retrieved successfully.",
-                Data = allBookLst
+                Data = books
             });
         }
 
-        // GET: booksById/{id}
+        // GET: api/books/booksById/{id}
         [HttpGet("booksById/{id}")]
-        public async Task<IActionResult> GetBooksById(string id)
+        public async Task<IActionResult> GetBookById(string id)
         {
-            // ID validation
             if (string.IsNullOrWhiteSpace(id))
             {
                 return BadRequest(new ApiResponse<BookDto>
@@ -70,10 +51,8 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
-            var book = await ExistingBookQuery
-                .FirstOrDefaultAsync(b => b.Id == id);
+            var book = await _bookService.GetBookByIdAsync(id);
 
-            //check if book exists
             if (book is null)
             {
                 return NotFound(new ApiResponse<BookDto>
@@ -83,367 +62,107 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
-            var result = new BookDto
-            {
-                Id = book.Id,
-                Author = book.Author,
-                Title = book.Title,
-                Genre = book.Genre,
-                IsAvailable = book.IsAvailable
-            };
-
-            //return Ok(new BookResponseDto
-            //{
-            //    IsSuccess = true,
-            //    Message = "Book retrieved successfully.",
-            //    Data = result
-            //});
-
             return Ok(new ApiResponse<BookDto>
             {
                 IsSuccess = true,
                 Message = "Book retrieved successfully.",
-                Data = result
+                Data = book
             });
         }
 
-        // GET: booksAvailable
-        [HttpGet("booksAvailable")]
-        public async Task<IActionResult> GetAvailableBooks()
-        {
-            var availableBooks = await AvailableBookQuery
-                .Select(book => new BookDto
-                {
-                    Id = book.Id,
-                    Author = book.Author,
-                    Title = book.Title,
-                    Genre = book.Genre,
-                    IsAvailable = book.IsAvailable
-                })
-                .ToListAsync();
-
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Books retrieved successfully.",
-                Data = availableBooks
-            });
-        }
-
-        // GET: searchByFilter
-        [HttpGet("booksSearch")]
-        public async Task<IActionResult> SearchByFilter(SearchBookDto searchRequest)
-        {
-            if (string.IsNullOrWhiteSpace(searchRequest.Author) &&
-                string.IsNullOrWhiteSpace(searchRequest.Title) &&
-                string.IsNullOrWhiteSpace(searchRequest.Genre))
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "At least one search filter must be provided."
-                });
-            }
-
-            var query = ExistingBookQuery;
-
-            if (!string.IsNullOrWhiteSpace(searchRequest.Author))
-                query = query.Where(b => b.Author.Contains(searchRequest.Author.Trim()));
-
-            if (!string.IsNullOrEmpty(searchRequest.Title))
-                query = query.Where(b => b.Title.Contains(searchRequest.Title.Trim()));
-
-            if (!string.IsNullOrEmpty(searchRequest.Genre))
-                query = query.Where(b => b.Genre.Contains(searchRequest.Genre.Trim()));
-
-            var results = await query
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    Author = b.Author,
-                    Genre = b.Genre,
-                    IsAvailable = b.IsAvailable
-                })
-                .ToListAsync();
-
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Search completed.",
-                Data = results
-            });
-        }
-
-        // POST: createBook
+        // POST: api/books/booksCreate
         [HttpPost("booksCreate")]
         public async Task<IActionResult> CreateBook([FromBody] CreateBookDto request)
         {
-            if (string.IsNullOrEmpty(request.Title) || string.IsNullOrEmpty(request.Author))
+            if (string.IsNullOrWhiteSpace(request.Title) ||
+                string.IsNullOrWhiteSpace(request.Author))
             {
-                return BadRequest(new ApiResponse<CreateBookDto>
+                return BadRequest(new ApiResponse<BookDto>
                 {
                     IsSuccess = false,
                     Message = "Author and Title are required."
                 });
             }
 
-            var newBook = new TblBook
-            {
-                Id = Guid.NewGuid().ToString(),
-                Author = request.Author,
-                Title = request.Title,
-                Genre = request.Genre,
-                IsAvailable = true,
-                DeleteFlag = false,
-                CreatedAt = DateTime.UtcNow
-            };
+            var createdBook = await _bookService.CreateBookAsync(request);
 
-            try
-            {
-
-                _db.TblBooks.Add(newBook);
-                var createdBookResult = await _db.SaveChangesAsync();
-
-                var createdBook = new BookDto
+            return CreatedAtAction(
+                nameof(GetBookById),
+                new { id = createdBook!.Id },
+                new ApiResponse<BookDto>
                 {
-                    Id = newBook.Id.ToString(),
-                    Author = newBook.Author,
-                    Title = newBook.Title,
-                    Genre = newBook.Genre,
-                    IsAvailable = newBook.IsAvailable
-                };
-
-                return CreatedAtAction(
-                            nameof(GetBooksById),
-                            new { id = newBook.Id },
-                            new ApiResponse<BookDto>
-                            {
-                                IsSuccess = createdBookResult > 0,
-                                Message = createdBookResult > 0 ? "Book created successfully!" : "Failed to create book.",
-                                Data = createdBook  
-                            }
-                        );
-            }
-            catch
-            {
-                return StatusCode(500, new ApiResponse<CreateBookDto>
-                {
-                    IsSuccess = false,
-                    Message = "An error occurred while creating the book."
+                    IsSuccess = true,
+                    Message = "Book created successfully.",
+                    Data = createdBook
                 });
-            }
         }
 
-        // PATCH: partial update books/{id}
+        // PATCH: api/books/booksUpdate/{id}
         [HttpPatch("booksUpdate/{id}")]
         public async Task<IActionResult> UpdateBook(string id, [FromBody] UpdateBookDto request)
         {
-            var book = await _db.TblBooks
-                .Where(b => !b.DeleteFlag)
-                .FirstOrDefaultAsync(b => b.Id == id);
-
-            if (book is null)
+            if (string.IsNullOrWhiteSpace(id))
             {
-                return NotFound(new ApiResponse<UpdateBookDto>
+                return BadRequest(new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Book id is required."
+                });
+            }
+
+            var updated = await _bookService.UpdateBookAsync(id, request);
+
+            if (!updated)
+            {
+                return NotFound(new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = "Book not found."
                 });
             }
 
-            if (!string.IsNullOrEmpty(request.Author))
-                book.Author = request.Author;
-
-            if (!string.IsNullOrEmpty(request.Title))
-                book.Title = request.Title;
-
-            if (!string.IsNullOrEmpty(request.Genre))
-                book.Genre = request.Genre;
-
-            book.UpdatedAt = DateTime.UtcNow;
-
-            try
+            return Ok(new ApiResponse<object>
             {
-                var patchedBookResult = await _db.SaveChangesAsync() > 0;
-
-                return Ok(new ApiResponse<BookDto>
-                {
-                    IsSuccess = true,
-                    Message = "Book updated successfully!"
-                    //Data = new BookDto
-                    //{
-                    //    Id = book.Id,
-                    //    Author = book.Author,
-                    //    Title = book.Title,
-                    //    Genre = book.Genre,
-                    //    IsAvailable = book.IsAvailable
-                    //}
-                });
-            }
-            catch
-            {
-                return StatusCode(500, new ApiResponse<UpdateBookDto>
-                {
-                    IsSuccess = false,
-                    Message = "An error occurred while updating the book."
-                });
-            }
+                IsSuccess = true,
+                Message = "Book updated successfully."
+            });
         }
 
-        // DELETE: deleteBook/{id}
+        // DELETE: api/books/booksDelete/{id}
         [HttpDelete("booksDelete/{id}")]
         public async Task<IActionResult> DeleteBook(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                return BadRequest(new ApiResponse<Object>
+                return BadRequest(new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = "Book id is required."
                 });
             }
 
-            var book = await _db.TblBooks
-                .FirstOrDefaultAsync(book => book.Id == id && !book.DeleteFlag);
+            var deleted = await _bookService.DeleteBookAsync(id);
 
-            if (book is null)
+            if (!deleted)
             {
-                return NotFound(new ApiResponse<Object>
+                return NotFound(new ApiResponse<object>
                 {
                     IsSuccess = false,
                     Message = "Book not found."
                 });
             }
 
-            //soft delete action
-            book.IsAvailable = false;
-            book.DeleteFlag = true;
-            book.UpdatedAt = DateTime.UtcNow;
-
-            var result = await _db.SaveChangesAsync() > 0;
-
-            return Ok(new ApiResponse<Object>
+            return Ok(new ApiResponse<object>
             {
-                IsSuccess = result,
-                Message = result ? "Book deleted successfully!" : "Failed to delete book."
+                IsSuccess = true,
+                Message = "Book deleted successfully."
             });
         }
-
-        // To restore soft-deleted books
-        // PATCH: booksRestore/{id}
-        [HttpPatch("booksRestore/{id}")]
-        public async Task<IActionResult> RestoreBooks(string id)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                return BadRequest(new ApiResponse<Object>
-                {
-                    IsSuccess = false,
-                    Message = "Book id is required."
-                });
-            }
-
-            var book = await _db.TblBooks
-                .FirstOrDefaultAsync(book => book.Id == id && book.DeleteFlag);
-
-            if (book is null)
-            {
-                return NotFound(new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "Book not found."
-                });
-            }
-
-            book.DeleteFlag = false;
-            book.IsAvailable = true;
-            book.UpdatedAt = DateTime.UtcNow;
-
-            var result = await _db.SaveChangesAsync() > 0;
-
-            try
-            {
-                var updatedStatus = new BookDto
-                {
-                    DeleteFlag = book.DeleteFlag,
-                    IsAvailable = book.IsAvailable
-                };
-
-                return Ok(new ApiResponse<BookDto>
-                {
-                    IsSuccess = result,
-                    Message = result ? "Book restored successfully!" : "Failed to restore book."
-                });
-            }
-            catch
-            {
-                return StatusCode(500, new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "An error occurred while restoring the book."
-                });
-            }
-
-        }
-
-        // for borrowing and returning books
-        // PATCH: setBookStatus/{id}
-        [HttpPatch("booksStatus/{id}")]
-        public async Task<IActionResult> SetBookStatus(string id, [FromBody] UpdateBookAvailabilityDto request)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                return BadRequest(new ApiResponse<Object>
-                {
-                    IsSuccess = false,
-                    Message = "Book id is required."
-                });
-            }
-
-            var book = await _db.TblBooks
-                .FirstOrDefaultAsync(book => book.Id == id && !book.DeleteFlag);
-
-            if (book is null)
-            {
-                return NotFound(new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "Book not found."
-                });
-            }
-
-            book.IsAvailable = request.IsAvailable;
-            book.UpdatedAt = DateTime.UtcNow;
-
-            var result = await _db.SaveChangesAsync() > 0;
-
-            try
-            {
-                var updatedStatus = new BookDto
-                {
-                    IsAvailable = request.IsAvailable
-                };
-                
-                return Ok(new ApiResponse<BookDto>
-                {
-                    IsSuccess = result,
-                    Message = result ? "Book status updated successfully!" : "Failed to update status"
-                });
-            }
-            catch
-            {
-                return StatusCode(500, new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "An error occurred while updating the book status."
-                });
-            }
-            
-        }
-
-        
-
     }
+
+
+
+
+}
 
 }

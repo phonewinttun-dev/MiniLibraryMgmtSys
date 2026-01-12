@@ -1,30 +1,17 @@
-﻿using Azure.Core;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
-using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
-using System.Runtime.CompilerServices;
 
 namespace MiniLibraryMgmtSys.Services
 {
-    public class UserService
+    public sealed class UserService(AppDbContext db) : IUserService
     {
-        private readonly AppDbContext _db;
-
-        public UserService(AppDbContext db)
-        {
-            _db = db;
-        }
+        private readonly AppDbContext _db = db;
 
         private IQueryable<TblUser> ExistingUser =>
             _db.TblUsers.AsNoTracking()
             .Where(u => !u.DeleteFlag);
-
-        //private IQueryable<TblUser> DuplicateEmail(string email) =>
-        //    _db.TblUsers.AsNoTracking()
-        //    .Where(u => u.Email == email);
-
 
         //check if email exists
         private async Task<bool> EmailExistsAsync(string email)
@@ -35,7 +22,7 @@ namespace MiniLibraryMgmtSys.Services
                 u.Email.ToLower() == email);
         }
 
-        public async Task<List<UserResponseDTO>> GetAllUsersAsync()
+        public async Task<List<UserResponseDTO>> GetAllAsync()
         {
             return await ExistingUser
                 .AsNoTracking()
@@ -65,7 +52,7 @@ namespace MiniLibraryMgmtSys.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<TblUser?> CreateUserAsync(CreateUserDTO dto)
+        public async Task<TblUser?> CreateAsync(CreateUserDTO dto)
         {
             // Prevent duplicate email
             var emailExists = await EmailExistsAsync(dto.Email);
@@ -97,7 +84,7 @@ namespace MiniLibraryMgmtSys.Services
             return user;
         }
 
-        public async Task<string?> RegisterUserAsync(RegisterDTO dto)
+        public async Task<string?> RegisterAsync(RegisterDTO dto)
         {
 
             // Prevent duplicate email
@@ -130,7 +117,7 @@ namespace MiniLibraryMgmtSys.Services
             return user.Id;
         }
 
-        public async Task<bool> UpdateUserAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
+        public async Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
         {
             var user = await ExistingUser
                 .FirstOrDefaultAsync(u => u.Id == id);
@@ -157,7 +144,7 @@ namespace MiniLibraryMgmtSys.Services
             return true;
         }
 
-        public async Task<bool> SoftDeleteUserAsync(string id, string? updatedBy = null)
+        public async Task<bool> SoftDeleteAsync(string id, string? updatedBy = null)
         {
             var user = await ExistingUser
                 .FirstOrDefaultAsync(u => u.Id == id && !u.DeleteFlag);
