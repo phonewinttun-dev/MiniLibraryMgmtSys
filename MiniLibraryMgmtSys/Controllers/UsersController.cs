@@ -20,7 +20,7 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var users = await _userService.GetAllUsersAsync();
+            var users = await _userService.GetAllAsync();
 
             return Ok(new ApiResponse<object>
             {

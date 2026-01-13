@@ -12,6 +12,5 @@ namespace MiniLibraryMgmtSys.Services
         Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null);
         Task<bool> SoftDeleteAsync(string id, string? updatedBy = null);
         Task<TblUser?> ValidateUserAsync(string email, string password);
-
     }
 }

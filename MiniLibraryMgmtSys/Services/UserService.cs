@@ -57,7 +57,14 @@ namespace MiniLibraryMgmtSys.Services
             // Prevent duplicate email
             var emailExists = await EmailExistsAsync(dto.Email);
 
+            var emailRegex = new System.Text.RegularExpressions.Regex(
+                            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+                            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
             if (emailExists)
+                return null;
+
+            if (!emailRegex.IsMatch(dto.Email.Trim()))
                 return null;
 
             var allowedRoles = new[] { "Member", "Admin", "Librarian" };
@@ -90,9 +97,16 @@ namespace MiniLibraryMgmtSys.Services
             // Prevent duplicate email
             var emailExists = await EmailExistsAsync(dto.Email);
 
+            var emailRegex = new System.Text.RegularExpressions.Regex(
+                @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
             if (emailExists)
                 return null;
-            
+
+            if (!emailRegex.IsMatch(dto.Email.Trim()))
+                return ("Invalid Email format!");
+
             var allowedRoles = new[] { "Member", "Admin", "Librarian" };
             var role = string.IsNullOrWhiteSpace(dto.Role) ? "Member" : dto.Role;
             if (!allowedRoles.Contains(role))
@@ -104,7 +118,7 @@ namespace MiniLibraryMgmtSys.Services
                 Name = dto.Name.Trim(),
                 Email = dto.Email.Trim().ToLower(),
                 Password = PasswordHasher.Hash(dto.Password),
-                Role = role,
+                Role = role.Trim().ToLower(),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 IsActive = true,
