@@ -80,6 +80,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 return Ok(new
                 {
                     message = "Login successful",
+                    token,
                     user.Id,
                     user.Name,
                     user.Email,

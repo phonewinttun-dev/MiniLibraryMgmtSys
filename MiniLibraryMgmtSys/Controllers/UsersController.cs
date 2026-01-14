@@ -7,7 +7,7 @@ namespace MiniLibraryMgmtSys.Controllers
 {
     [ApiController]
     [Route("api/users")]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -18,6 +18,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> GetAll()
         {
             var users = await _userService.GetAllAsync();
@@ -31,6 +32,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> GetById(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -58,6 +60,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDTO dto)
         {
             if (!ModelState.IsValid)
@@ -86,6 +89,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDTO dto)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -112,6 +116,7 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             if (string.IsNullOrWhiteSpace(id))

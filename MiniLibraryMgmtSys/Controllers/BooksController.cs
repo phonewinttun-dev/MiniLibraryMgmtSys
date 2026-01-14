@@ -1,6 +1,7 @@
 ﻿//using Microsoft.AspNetCore.Http;
 //using Microsoft.AspNetCore.Http.HttpResults;
 using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 //using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ namespace MiniLibraryMgmtSys.Controllers
 {
     [ApiController]
     [Route("api/books")]
+    [Authorize]
     public class BooksController : ControllerBase
     {
         private readonly IBookService _bookService;
@@ -26,7 +28,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
         // GET: api/books/allBooks
         [HttpGet("allBooks")]
-        public async Task<IActionResult> GetAllBooks()
+        [Authorize(Roles = "Admin, Librarian, Member")]
+        public async Task<IActionResult> GetAll()
         {
             var books = await _bookService.GetAllBooksAsync();
 
@@ -34,13 +37,14 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 IsSuccess = true,
                 Message = "Books retrieved successfully.",
-                Data = books
+                Data = books.ToList()
             });
         }
 
         // GET: api/books/booksById/{id}
         [HttpGet("booksById/{id}")]
-        public async Task<IActionResult> GetBookById(string id)
+        [Authorize(Roles = "Admin, Librarian, Member")]
+        public async Task<IActionResult> GetById(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -72,7 +76,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
         // POST: api/books/booksCreate
         [HttpPost("booksCreate")]
-        public async Task<IActionResult> CreateBook([FromBody] CreateBookDto request)
+        [Authorize(Roles = "Admin, Librarian")]
+        public async Task<IActionResult> Create([FromBody] CreateBookDto request)
         {
             if (string.IsNullOrWhiteSpace(request.Title) ||
                 string.IsNullOrWhiteSpace(request.Author))
@@ -87,7 +92,7 @@ namespace MiniLibraryMgmtSys.Controllers
             var createdBook = await _bookService.CreateBookAsync(request);
 
             return CreatedAtAction(
-                nameof(GetBookById),
+                nameof(GetById),
                 new { id = createdBook!.Id },
                 new ApiResponse<BookDto>
                 {
@@ -99,7 +104,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
         // PATCH: api/books/booksUpdate/{id}
         [HttpPatch("booksUpdate/{id}")]
-        public async Task<IActionResult> UpdateBook(string id, [FromBody] UpdateBookDto request)
+        [Authorize(Roles = "Admin, Librarian")]
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateBookDto request)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -130,7 +136,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
         // DELETE: api/books/booksDelete/{id}
         [HttpDelete("booksDelete/{id}")]
-        public async Task<IActionResult> DeleteBook(string id)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
