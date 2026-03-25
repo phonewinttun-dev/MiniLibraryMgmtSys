@@ -29,6 +29,16 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDTO dto)
         {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid registration attempt for: {Email}", dto.Email);
+                return BadRequest(new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Failed registration attempt."
+                });
+            }
+            
             try
             {
                 _logger.LogInformation("Registration attempt for: {Email}", dto.Email);
@@ -53,7 +63,12 @@ namespace MiniLibraryMgmtSys.Controllers
             catch (Exception ex) 
             {
                 _logger.LogError(ex, "Unexpected error during registration.");
-                return StatusCode(500, ex.Message);
+
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "An unexpected error occured."
+                });
             }
         }
 
@@ -61,6 +76,17 @@ namespace MiniLibraryMgmtSys.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDTO dto)
         {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid login attempt for: {Email}", dto.Email);
+                
+                return BadRequest(new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Failed login attempt."
+                });
+            }
+
             try
             {
                 _logger.LogInformation("Login attempt for: {Email}", dto.Email);
@@ -90,7 +116,12 @@ namespace MiniLibraryMgmtSys.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during login.");
-                return StatusCode(500, ex.Message);
+
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "An unexpected error occurred."
+                });
             }
         }
 

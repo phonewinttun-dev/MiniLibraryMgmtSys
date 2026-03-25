@@ -95,6 +95,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 }
 
                 _logger.LogInformation("Book created successfully with ID: {BookId}", createdBook.Id);
+                
                 return CreatedAtAction(
                     nameof(GetById),
                     new { id = createdBook!.Id },
@@ -210,10 +211,10 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Book deleted successfully."
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                _logger.LogError("Error occurred while deleting the book with ID: {BookId}", id);
+                _logger.LogError(ex, "Error occurred while deleting the book with ID: {BookId}", id);
 
                 return StatusCode(500, new ApiResponse<object>
                 {

@@ -12,9 +12,13 @@ namespace MiniLibraryMgmtSys.Controllers
     {
         private readonly IUserService _userService;
 
-        public UsersController(IUserService userService)
+        private readonly ILogger<UsersController> _logger;
+
+        public UsersController(IUserService userService,
+            ILogger<UsersController> logger)
         {
             _userService = userService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -61,7 +65,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateUser([FromBody] CreateUserDTO dto)
+        public async Task<IActionResult> Create([FromBody] CreateUserDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiResponse<object>
@@ -72,6 +76,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
+                _logger.LogInformation("Creating user with email: {Email}", dto.Email);
+
                 var user = await _userService.CreateAsync(dto);
 
                 if (user == null)
@@ -80,6 +86,8 @@ namespace MiniLibraryMgmtSys.Controllers
                         IsSuccess = false,
                         Message = "Email already exists."
                     });
+
+                _logger.LogInformation("User created with id: {UserId}", user.Id);
 
                 return CreatedAtAction(nameof(GetById), new { id = user.Id },
                     new ApiResponse<object>
@@ -91,18 +99,19 @@ namespace MiniLibraryMgmtSys.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while creating user with email: {Email}", dto.Email);
+
                 return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "An unexpected error occurred.",
-                    Data = ex.Message
+                    Message = "An unexpected error occurred."
                 });
             }
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDTO dto)
+        public async Task<IActionResult> Update(string id, [FromBody] UpdateUserDTO dto)
         {
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new ApiResponse<object>
@@ -113,6 +122,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
+                _logger.LogInformation("Updating user with id: {UserId}", id);
+
                 var success = await _userService.UpdateAsync(id, dto);
 
                 if (!success)
@@ -122,19 +133,23 @@ namespace MiniLibraryMgmtSys.Controllers
                         Message = "User not found."
                     });
 
+                _logger.LogInformation("User with id: {UserId} updated successfully.", id);
+
                 return Ok(new ApiResponse<object>
                 {
                     IsSuccess = true,
-                    Message = "User updated successfully."
+                    Message = "User updated successfully.",
+                    Data = success
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
+                _logger.LogError(ex, "Error occurred while updating user with id: {UserId}", id);
+
                 return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "An unexpected error occurred.",
-                    Data = ex.Message
+                    Message = "An unexpected error occurred."
                 });
             }
             
@@ -142,7 +157,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> SoftDeleteUser(string id)
+        public async Task<IActionResult> SoftDelete(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new ApiResponse<object>
@@ -151,15 +166,20 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
-            try {
+            try 
+            {
+                _logger.LogInformation("Deleting user with id: {UserId}", id);
+
                 var success = await _userService.SoftDeleteAsync(id);
 
-                if (!success)
-                    return NotFound(new ApiResponse<object>
+                if (!success)                
+                return NotFound(new ApiResponse<object>
                     {
                         IsSuccess = false,
                         Message = "User not found."
                     });
+
+                _logger.LogInformation("User with id: {UserId} deleted successfully.", id);
 
                 return Ok(new ApiResponse<object>
                 {
@@ -169,11 +189,12 @@ namespace MiniLibraryMgmtSys.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while deleting user with id: {UserId}", id);
+
                 return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "An unexpected error occurred.",
-                    Data = ex.Message
+                    Message = "An unexpected error occurred."
                 });
             }
             
