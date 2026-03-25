@@ -70,22 +70,34 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Invalid user data."
                 });
 
-            var user = await _userService.CreateAsync(dto);
+            try
+            {
+                var user = await _userService.CreateAsync(dto);
 
-            if (user == null)
-                return Conflict(new ApiResponse<object>
+                if (user == null)
+                    return Conflict(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = "Email already exists."
+                    });
+
+                return CreatedAtAction(nameof(GetById), new { id = user.Id },
+                    new ApiResponse<object>
+                    {
+                        IsSuccess = true,
+                        Message = "User created successfully.",
+                        Data = user
+                    });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "Email already exists."
+                    Message = "An unexpected error occurred.",
+                    Data = ex.Message
                 });
-
-            return CreatedAtAction(nameof(GetById), new { id = user.Id },
-                new ApiResponse<object>
-                {
-                    IsSuccess = true,
-                    Message = "User created successfully.",
-                    Data = user
-                });
+            }
         }
 
         [HttpPut("{id}")]
@@ -99,25 +111,38 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
-            var success = await _userService.UpdateAsync(id, dto);
+            try
+            {
+                var success = await _userService.UpdateAsync(id, dto);
 
-            if (!success)
-                return NotFound(new ApiResponse<object>
+                if (!success)
+                    return NotFound(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = "User not found."
+                    });
+
+                return Ok(new ApiResponse<object>
+                {
+                    IsSuccess = true,
+                    Message = "User updated successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "User not found."
+                    Message = "An unexpected error occurred.",
+                    Data = ex.Message
                 });
-
-            return Ok(new ApiResponse<object>
-            {
-                IsSuccess = true,
-                Message = "User updated successfully."
-            });
+            }
+            
         }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteUser(string id)
+        public async Task<IActionResult> SoftDeleteUser(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest(new ApiResponse<object>
@@ -126,20 +151,32 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
-            var success = await _userService.SoftDeleteAsync(id);
+            try {
+                var success = await _userService.SoftDeleteAsync(id);
 
-            if (!success)
-                return NotFound(new ApiResponse<object>
+                if (!success)
+                    return NotFound(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = "User not found."
+                    });
+
+                return Ok(new ApiResponse<object>
+                {
+                    IsSuccess = true,
+                    Message = "User deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "User not found."
+                    Message = "An unexpected error occurred.",
+                    Data = ex.Message
                 });
-
-            return Ok(new ApiResponse<object>
-            {
-                IsSuccess = true,
-                Message = "User deleted successfully."
-            });
+            }
+            
         }
     }
 }

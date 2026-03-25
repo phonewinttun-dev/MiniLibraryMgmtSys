@@ -5,9 +5,14 @@ using MiniLibraryMgmtSys.Infrastructure;
 
 namespace MiniLibraryMgmtSys.Services
 {
-    public sealed class UserService(AppDbContext db) : IUserService
+    public sealed class UserService: IUserService
     {
-        private readonly AppDbContext _db = db;
+        private readonly AppDbContext _db;
+
+        public UserService(AppDbContext db)
+        {
+            _db = db;
+        }
 
         private IQueryable<TblUser> ExistingUser =>
             _db.TblUsers.AsNoTracking()
@@ -149,7 +154,7 @@ namespace MiniLibraryMgmtSys.Services
                     user.Email = dto.Email;
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
-                user.Password = dto.Password;
+                user.Password = PasswordHasher.Hash(dto.Password);
 
             user.UpdatedAt = DateTime.UtcNow;
             user.UpdatedBy = updatedBy;

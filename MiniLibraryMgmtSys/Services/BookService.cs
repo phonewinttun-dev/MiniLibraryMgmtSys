@@ -4,9 +4,14 @@ using MiniLibraryMgmtSys.DTO;
 
 namespace MiniLibraryMgmtSys.Services
 {
-    public sealed class BookService(AppDbContext db) : IBookService
+    public sealed class BookService : IBookService
     {
-        private readonly AppDbContext _db = db;
+        private readonly AppDbContext _db;
+
+        public BookService(AppDbContext db)
+        {
+            _db = db;
+        }
 
         private IQueryable<TblBook> ExistingBooks =>
         _db.TblBooks.Where(b => !b.DeleteFlag);

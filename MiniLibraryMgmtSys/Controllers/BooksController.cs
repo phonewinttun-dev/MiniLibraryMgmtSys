@@ -1,15 +1,7 @@
-﻿//using Microsoft.AspNetCore.Http;
-//using Microsoft.AspNetCore.Http.HttpResults;
-using Azure.Core;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-//using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Services;
-using System.Data;
-//using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 
 namespace MiniLibraryMgmtSys.Controllers
@@ -19,12 +11,16 @@ namespace MiniLibraryMgmtSys.Controllers
     [Authorize]
     public class BooksController : ControllerBase
     {
+        
         private readonly IBookService _bookService;
+        private readonly ILogger<BooksController> _logger;
 
-        public BooksController(IBookService bookService)
+        public BooksController(IBookService bookService, ILogger<BooksController> logger)
         {
             _bookService = bookService;
+            _logger = logger;
         }
+
 
         // GET: api/books/allBooks
         [HttpGet("allBooks")]
@@ -75,67 +71,112 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
         // POST: api/books/booksCreate
-        [HttpPost("booksCreate")]
+        [HttpPost("books")]
         [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> Create([FromBody] CreateBookDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.Title) ||
-                string.IsNullOrWhiteSpace(request.Author))
-            {
-                return BadRequest(new ApiResponse<BookDto>
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "Author and Title are required."
+                    Message = "Invalid book data."
+                });
+
+            try {
+                var createdBook = await _bookService.CreateBookAsync(request);
+
+                if (createdBook == null)
+                {
+                    return StatusCode(500, new ApiResponse<BookDto>
+                    {
+                        IsSuccess = false,
+                        Message = "Failed to create book."
+                    });
+                }
+
+                _logger.LogInformation("Book created successfully with ID: {BookId}", createdBook.Id);
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = createdBook!.Id },
+                    new ApiResponse<BookDto>
+                    {
+                        IsSuccess = true,
+                        Message = "Book created successfully.",
+                        Data = createdBook
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while creating a book.");
+
+                return StatusCode(500, new ApiResponse<BookDto>
+                {
+                    IsSuccess = false,
+                    Message = "An unexpected error occured."
                 });
             }
-
-            var createdBook = await _bookService.CreateBookAsync(request);
-
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = createdBook!.Id },
-                new ApiResponse<BookDto>
-                {
-                    IsSuccess = true,
-                    Message = "Book created successfully.",
-                    Data = createdBook
-                });
+            
         }
 
-        // PATCH: api/books/booksUpdate/{id}
-        [HttpPatch("booksUpdate/{id}")]
+        // PATCH: api/{id}
+        [HttpPatch("{id}")]
         [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateBookDto request)
         {
-            if (string.IsNullOrWhiteSpace(id))
+            if (request == null || !ModelState.IsValid)
             {
                 return BadRequest(new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "Book id is required."
+                    Message = "Invalid book data."
                 });
             }
 
-            var updated = await _bookService.UpdateBookAsync(id, request);
+            //if (string.IsNullOrWhiteSpace(id))
+            //{
+            //    return BadRequest(new ApiResponse<object>
+            //    {
+            //        IsSuccess = false,
+            //        Message = "Book id is required."
+            //    });
+            //}
 
-            if (!updated)
+            try 
             {
-                return NotFound(new ApiResponse<object>
+                var updated = await _bookService.UpdateBookAsync(id, request);
+
+                if (!updated)
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = "Book not found."
+                    });
+                }
+
+                _logger.LogInformation("Book updated successfully with ID: {BookId}", id);
+
+                return Ok(new ApiResponse<object>
+                {
+                    IsSuccess = true,
+                    Message = "Book updated successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating the book with ID: {BookId}", id);
+
+                return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "Book not found."
+                    Message = $"An error occurred while updating the book: {ex.Message}"
                 });
             }
-
-            return Ok(new ApiResponse<object>
-            {
-                IsSuccess = true,
-                Message = "Book updated successfully."
-            });
+            
         }
 
-        // DELETE: api/books/booksDelete/{id}
-        [HttpDelete("booksDelete/{id}")]
+        // DELETE: api/{id}
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(string id)
         {
@@ -148,22 +189,39 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
-            var deleted = await _bookService.DeleteBookAsync(id);
-
-            if (!deleted)
+            try 
             {
-                return NotFound(new ApiResponse<object>
+                var deleted = await _bookService.DeleteBookAsync(id);
+
+                if (!deleted)
                 {
-                    IsSuccess = false,
-                    Message = "Book not found."
+                    return NotFound(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = "Book not found."
+                    });
+                }
+
+                _logger.LogInformation("Book deleted successfully with ID: {BookId}", id);
+
+                return Ok(new ApiResponse<object>
+                {
+                    IsSuccess = true,
+                    Message = "Book deleted successfully."
                 });
             }
-
-            return Ok(new ApiResponse<object>
+            catch (Exception)
             {
-                IsSuccess = true,
-                Message = "Book deleted successfully."
-            });
+
+                _logger.LogError("Error occurred while deleting the book with ID: {BookId}", id);
+
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "An unexpected error occurred while deleting the book."
+                });
+            }
+            
         }
     }
 
