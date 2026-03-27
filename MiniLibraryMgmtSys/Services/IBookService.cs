@@ -4,14 +4,15 @@ namespace MiniLibraryMgmtSys.Services
 {
     public interface IBookService
     {
-        Task<List<BookDto>> GetAllBooksAsync();
+        //Task<List<BookDto>> GetAllBooksAsync();
         Task<BookDto?> GetBookByIdAsync(string id);
+        Task<List<BookDto>> GetBooksAsync();
         Task<List<BookDto>> GetAvailableBooksAsync();
         Task<List<BookDto>> SearchBooksAsync(SearchBookDto search);
         Task<BookDto?> CreateBookAsync(CreateBookDto dto);
         Task<bool> UpdateBookAsync(string id, UpdateBookDto dto);
         Task<bool> DeleteBookAsync(string id);
         Task<bool> RestoreBookAsync(string id);
-        Task<bool> UpdateBookStatusAsync(string id, bool isAvailable);
+        Task<bool> UpdateStatusAsync(string id, bool isAvailable);
     }
 }

@@ -11,7 +11,7 @@ namespace MiniLibraryMgmtSys.Controllers
     [Authorize]
     public class BooksController : ControllerBase
     {
-        
+
         private readonly IBookService _bookService;
         private readonly ILogger<BooksController> _logger;
 
@@ -22,9 +22,9 @@ namespace MiniLibraryMgmtSys.Controllers
         }
 
 
-        // GET: api/books/allBooks
-        [HttpGet("allBooks")]
-        [Authorize(Roles = "Admin, Librarian, Member")]
+        // GET: api/books/
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAll()
         {
             var books = await _bookService.GetAllBooksAsync();
@@ -37,8 +37,38 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
-        // GET: api/books/booksById/{id}
-        [HttpGet("booksById/{id}")]
+        // GET: api/existingBooks
+        [HttpGet("existingBooks")]
+        [Authorize(Roles = "Librarian, Member")]
+        public async Task<IActionResult> Get(   )
+        {
+            var books = await _bookService.GetBooksAsync();
+
+            return Ok(new ApiResponse<List<BookDto>>
+            {
+                IsSuccess = true,
+                Message = "Books retrieved successfully.",
+                Data = books.ToList()
+            });
+        }
+
+        // GET: api/availableBooks
+        [HttpGet("availableBooks")]
+        [Authorize(Roles = "Librarian, Member")]
+        public async Task<IActionResult> GetAvaialable()
+        {
+            var books = await _bookService.GetAvailableBooksAsync();
+
+            return Ok(new ApiResponse<List<BookDto>>
+            {
+                IsSuccess = true,
+                Message = "Books retrieved successfully.",
+                Data = books.ToList()
+            });
+        }
+
+        // GET: api/books/{id}
+        [HttpGet("{id}")]
         [Authorize(Roles = "Admin, Librarian, Member")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -70,8 +100,8 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
-        // POST: api/books/booksCreate
-        [HttpPost("books")]
+        // POST: api/books
+        [HttpPost]
         [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> Create([FromBody] CreateBookDto request)
         {
@@ -95,7 +125,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 }
 
                 _logger.LogInformation("Book created successfully with ID: {BookId}", createdBook.Id);
-                
+
                 return CreatedAtAction(
                     nameof(GetById),
                     new { id = createdBook!.Id },
@@ -116,7 +146,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "An unexpected error occured."
                 });
             }
-            
+
         }
 
         // PATCH: api/{id}
@@ -142,7 +172,7 @@ namespace MiniLibraryMgmtSys.Controllers
             //    });
             //}
 
-            try 
+            try
             {
                 var updated = await _bookService.UpdateBookAsync(id, request);
 
@@ -173,7 +203,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = $"An error occurred while updating the book: {ex.Message}"
                 });
             }
-            
+
         }
 
         // DELETE: api/{id}
@@ -190,7 +220,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
-            try 
+            try
             {
                 var deleted = await _bookService.DeleteBookAsync(id);
 
@@ -222,7 +252,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "An unexpected error occurred while deleting the book."
                 });
             }
-            
+
         }
     }
 
