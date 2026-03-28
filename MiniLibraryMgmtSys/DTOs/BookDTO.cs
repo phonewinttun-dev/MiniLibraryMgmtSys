@@ -12,10 +12,10 @@ namespace MiniLibraryMgmtSys.DTO
         public string? Genre { get; set; }
         public bool IsAvailable { get; set; }
         public bool DeleteFlag { get; set; }
-        //public DateTime CreatedAt { get; set; }
-        //public DateTime UpdatedAt { get; set; }
-        //public string? CreatedBy { get; set; }
-        //public string? UpdatedBy { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
     }
 
     public class CreateBookDto
@@ -23,7 +23,6 @@ namespace MiniLibraryMgmtSys.DTO
         public string Author { get; set; } = null!;
         public string Title { get; set; } = null!;
         public string Genre { get; set; } = null!;
-        //public string? CreatedBy { get; set; }
     }
 
     public class UpdateBookDto
@@ -32,7 +31,6 @@ namespace MiniLibraryMgmtSys.DTO
         public string? Title { get; set; }
         public string? Genre { get; set; }
         public bool? IsAvailable { get; set; }
-        //public string? UpdatedBy { get; set; }
     }
 
     public class UpdateBookAvailabilityDto

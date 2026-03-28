@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Services;
+using System.Security.Claims;
 
 
 namespace MiniLibraryMgmtSys.Controllers
@@ -114,8 +115,9 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
+                var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
 
-                var createdBook = await _bookService.CreateBookAsync(request);
+                var createdBook = await _bookService.CreateBookAsync(request, user);
 
                 if (createdBook == null)
                 {
@@ -126,7 +128,11 @@ namespace MiniLibraryMgmtSys.Controllers
                     });
                 }
 
-                _logger.LogInformation("Book created successfully with ID: {BookId}", createdBook.Id);
+                _logger.LogInformation(
+                    "Book created successfully. BookId: {BookId}, User: {User}",
+                    createdBook.Id,
+                    user
+                );
 
                 return CreatedAtAction(
                     nameof(GetById),
@@ -146,7 +152,7 @@ namespace MiniLibraryMgmtSys.Controllers
                 {
                     IsSuccess = false,
                     Message = "An unexpected error occured."
-                }); 
+                });
             }
 
         }
@@ -172,7 +178,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                var createdBooks = await _bookService.BulkCreateBooksAsync(requests);
+                var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
+                var createdBooks = await _bookService.BulkCreateBooksAsync(requests, user);
 
                 _logger.LogInformation("{Count} books created successfully.", createdBooks.Count);
 
@@ -211,7 +218,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                var updated = await _bookService.UpdateBookAsync(id, request);
+                var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
+                var updated = await _bookService.UpdateBookAsync(id, request, user);
 
                 if (!updated)
                 {
@@ -259,7 +267,8 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                var deleted = await _bookService.DeleteBookAsync(id);
+                var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
+                var deleted = await _bookService.DeleteBookAsync(id, user);
 
                 if (!deleted)
                 {

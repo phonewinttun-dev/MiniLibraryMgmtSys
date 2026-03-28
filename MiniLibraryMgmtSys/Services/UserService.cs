@@ -39,7 +39,10 @@ namespace MiniLibraryMgmtSys.Services
                     Id = u.Id,
                     Name = u.Name,
                     Email = u.Email,
-                    Role = u.Role
+                    Role = u.Role,
+                    CreatedAt = u.CreatedAt,
+                    UpdatedAt = u.UpdatedAt,
+                    UpdatedBy = u.UpdatedBy
                 })
                 .ToListAsync();
         }
@@ -53,7 +56,10 @@ namespace MiniLibraryMgmtSys.Services
                     Id = u.Id,
                     Name = u.Name,
                     Email = u.Email,
-                    Role = u.Role
+                    Role = u.Role,
+                    CreatedAt = u.CreatedAt,
+                    UpdatedAt = u.UpdatedAt,
+                    UpdatedBy = u.UpdatedBy
                 })
                 .FirstOrDefaultAsync();
         }
@@ -69,7 +75,10 @@ namespace MiniLibraryMgmtSys.Services
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
-                Role = user.Role
+                Role = user.Role,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                UpdatedBy = user.UpdatedBy
             });
         }
 

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Services;
+using System.Security.Claims;
 
 namespace MiniLibraryMgmtSys.Controllers
 {
@@ -125,7 +126,8 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 _logger.LogInformation("Updating user with id: {UserId}", id);
 
-                var result = await _userService.UpdateAsync(id, dto);
+                var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
+                var result = await _userService.UpdateAsync(id, dto, user);
 
                 if (!result.IsSuccess)
                     return NotFound(new ApiResponse<object>
@@ -171,7 +173,8 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 _logger.LogInformation("Deleting user with id: {UserId}", id);
 
-                var result = await _userService.SoftDeleteAsync(id);
+                var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
+                var result = await _userService.SoftDeleteAsync(id, user);
 
                 if (!result.IsSuccess)
                 return NotFound(new ApiResponse<object>

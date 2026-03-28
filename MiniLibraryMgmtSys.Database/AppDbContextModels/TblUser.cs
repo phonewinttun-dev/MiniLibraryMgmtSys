@@ -15,9 +15,9 @@ public partial class TblUser
 
     public string Role { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
 
-    public DateTime UpdatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 
     public DateTime? LastLoginDate { get; set; }
 

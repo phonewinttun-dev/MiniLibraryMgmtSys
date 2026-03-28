@@ -52,6 +52,10 @@ namespace MiniLibraryMgmtSys.Services
                 Title = book.Title,
                 Genre = book.Genre,
                 IsAvailable = book.IsAvailable,
+                CreatedAt = book.CreatedAt,
+                CreatedBy = book.CreatedBy,
+                UpdatedAt = book.UpdatedAt,
+                UpdatedBy = book.UpdatedBy
             };
         }
 
@@ -67,6 +71,10 @@ namespace MiniLibraryMgmtSys.Services
                     Title = b.Title,
                     Genre = b.Genre,
                     IsAvailable = b.IsAvailable,
+                    CreatedAt = b.CreatedAt,
+                    CreatedBy = b.CreatedBy,
+                    UpdatedAt = b.UpdatedAt,
+                    UpdatedBy = b.UpdatedBy
                 })
                 .ToListAsync();
         }
@@ -82,6 +90,10 @@ namespace MiniLibraryMgmtSys.Services
                     Title = b.Title,
                     Genre = b.Genre,
                     IsAvailable = b.IsAvailable,
+                    CreatedAt = b.CreatedAt,
+                    CreatedBy = b.CreatedBy,
+                    UpdatedAt = b.UpdatedAt,
+                    UpdatedBy = b.UpdatedBy
                 })
                 .ToListAsync();
         }
@@ -91,16 +103,13 @@ namespace MiniLibraryMgmtSys.Services
             var query = ActiveBooks.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search.Author))
-                //query = query.Where(b => b.Author.ToLower().Contains(search.Author.ToLower()));
-                query = query.Where(b => EF.Functions.Like(b.Title, $"%{search.Author}%"));
+                query = query.Where(b => EF.Functions.Like(b.Author, $"%{search.Author}%"));
 
             if (!string.IsNullOrWhiteSpace(search.Title))
-                //query = query.Where(b => b.Title.ToLower().Contains(search.Title.ToLower()));
-                query = query.Where(b =>EF.Functions.Like(b.Title, $"%{search.Title}%"));
+                query = query.Where(b => EF.Functions.Like(b.Title, $"%{search.Title}%"));
 
             if (!string.IsNullOrWhiteSpace(search.Genre))
-                //query = query.Where(b => b.Genre.ToLower().Contains(search.Genre.ToLower()));
-                query = query.Where(b => EF.Functions.Like(b.Title, $"%{search.Genre}%"));
+                query = query.Where(b => EF.Functions.Like(b.Genre, $"%{search.Genre}%"));
 
 
             return await query
@@ -111,12 +120,16 @@ namespace MiniLibraryMgmtSys.Services
                     Author = b.Author,
                     Title = b.Title,
                     Genre = b.Genre,
-                    IsAvailable = b.IsAvailable
+                    IsAvailable = b.IsAvailable,
+                    CreatedAt = b.CreatedAt,
+                    CreatedBy = b.CreatedBy,
+                    UpdatedAt = b.UpdatedAt,
+                    UpdatedBy = b.UpdatedBy
                 })
                 .ToListAsync();
         }
 
-        public async Task<BookDto?> CreateBookAsync(CreateBookDto dto)
+        public async Task<BookDto?> CreateBookAsync(CreateBookDto dto, string user)
         {
             var book = new TblBook
             {
@@ -126,7 +139,8 @@ namespace MiniLibraryMgmtSys.Services
                 Genre = dto.Genre,
                 IsAvailable = true,
                 DeleteFlag = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user
             };
 
             _db.TblBooks.Add(book);
@@ -139,11 +153,15 @@ namespace MiniLibraryMgmtSys.Services
                 Author = book.Author,
                 Title = book.Title,
                 Genre = book.Genre,
-                IsAvailable = book.IsAvailable
+                IsAvailable = book.IsAvailable,
+                CreatedAt = book.CreatedAt,
+                CreatedBy = book.CreatedBy,
+                UpdatedAt = book.UpdatedAt,
+                UpdatedBy = book.UpdatedBy
             };
         }
 
-        public async Task<List<BookDto>> BulkCreateBooksAsync(List<CreateBookDto> dtos)
+        public async Task<List<BookDto>> BulkCreateBooksAsync(List<CreateBookDto> dtos, string user)
         {
             var books = dtos.Select(dto => new TblBook
             {
@@ -153,7 +171,8 @@ namespace MiniLibraryMgmtSys.Services
                 Genre = dto.Genre,
                 IsAvailable = true,
                 DeleteFlag = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user
             }).ToList();
 
             _db.TblBooks.AddRange(books);
@@ -165,11 +184,15 @@ namespace MiniLibraryMgmtSys.Services
                 Author = b.Author,
                 Title = b.Title,
                 Genre = b.Genre,
-                IsAvailable = b.IsAvailable
+                IsAvailable = b.IsAvailable,
+                CreatedAt = b.CreatedAt,
+                CreatedBy = b.CreatedBy,
+                UpdatedAt = b.UpdatedAt,
+                UpdatedBy = b.UpdatedBy
             }).ToList();
         }
 
-        public async Task<bool> UpdateBookAsync(string id, UpdateBookDto dto)
+        public async Task<bool> UpdateBookAsync(string id, UpdateBookDto dto, string user)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);
             if (book == null) return false;
@@ -179,10 +202,11 @@ namespace MiniLibraryMgmtSys.Services
             if (!string.IsNullOrEmpty(dto.Genre)) book.Genre = dto.Genre;
 
             book.UpdatedAt = DateTime.UtcNow;
+            book.UpdatedBy = user;
             return await _db.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> DeleteBookAsync(string id)
+        public async Task<bool> DeleteBookAsync(string id, string user)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);
             if (book == null) return false;
@@ -190,12 +214,13 @@ namespace MiniLibraryMgmtSys.Services
             book.DeleteFlag = true;
             book.IsAvailable = false;
             book.UpdatedAt = DateTime.UtcNow;
+            book.UpdatedBy = user;
 
             return await _db.SaveChangesAsync() > 0;
         }
 
         // admin restore deleted books
-        public async Task<bool> RestoreBookAsync(string id)
+        public async Task<bool> RestoreBookAsync(string id, string user)
         {
             var book = await _db.TblBooks.FirstOrDefaultAsync(b => b.Id == id && b.DeleteFlag);
             if (book == null) return false;
@@ -203,18 +228,20 @@ namespace MiniLibraryMgmtSys.Services
             book.DeleteFlag = false;
             book.IsAvailable = true;
             book.UpdatedAt = DateTime.UtcNow;
+            book.UpdatedBy = user;
 
             return await _db.SaveChangesAsync() > 0;
         }
 
         // update book's avaialability status
-        public async Task<bool> UpdateStatusAsync(string id, bool isAvailable)
+        public async Task<bool> UpdateStatusAsync(string id, bool isAvailable, string user)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);
             if (book == null) return false;
 
             book.IsAvailable = isAvailable;
             book.UpdatedAt = DateTime.UtcNow;
+            book.UpdatedBy = user;
 
             return await _db.SaveChangesAsync() > 0;
         }
