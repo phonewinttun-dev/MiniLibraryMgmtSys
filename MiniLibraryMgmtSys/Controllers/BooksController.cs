@@ -23,24 +23,24 @@ namespace MiniLibraryMgmtSys.Controllers
 
 
         // GET: api/books/
-        [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAll()
-        {
-            var books = await _bookService.GetAllBooksAsync();
+        //[HttpGet]
+        //[Authorize(Roles = "Admin")]
+        //public async Task<IActionResult> GetAll()
+        //{
+        //    var books = await _bookService.GetBooksAsync();
 
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Books retrieved successfully.",
-                Data = books.ToList()
-            });
-        }
+        //    return Ok(new ApiResponse<List<BookDto>>
+        //    {
+        //        IsSuccess = true,
+        //        Message = "Books retrieved successfully.",
+        //        Data = books
+        //    });
+        //}
 
         // GET: api/existingBooks
         [HttpGet("existingBooks")]
-        [Authorize(Roles = "Librarian, Member")]
-        public async Task<IActionResult> Get(   )
+        [Authorize(Roles = "Admin, Librarian, Member")]
+        public async Task<IActionResult> Get()
         {
             var books = await _bookService.GetBooksAsync();
 
@@ -48,13 +48,13 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 IsSuccess = true,
                 Message = "Books retrieved successfully.",
-                Data = books.ToList()
+                Data = books
             });
         }
 
         // GET: api/availableBooks
         [HttpGet("availableBooks")]
-        [Authorize(Roles = "Librarian, Member")]
+        [Authorize(Roles = "Admin, Librarian, Member")]
         public async Task<IActionResult> GetAvaialable()
         {
             var books = await _bookService.GetAvailableBooksAsync();
@@ -63,7 +63,7 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 IsSuccess = true,
                 Message = "Books retrieved successfully.",
-                Data = books.ToList()
+                Data = books
             });
         }
 
@@ -112,7 +112,9 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Invalid book data."
                 });
 
-            try {
+            try
+            {
+
                 var createdBook = await _bookService.CreateBookAsync(request);
 
                 if (createdBook == null)
@@ -144,9 +146,53 @@ namespace MiniLibraryMgmtSys.Controllers
                 {
                     IsSuccess = false,
                     Message = "An unexpected error occured."
-                });
+                }); 
             }
 
+        }
+
+        // POST: api/books/bulkInsert
+        [HttpPost("bulkInsert")]
+        [Authorize(Roles = "Admin, Librarian")]
+        public async Task<IActionResult> BulkCreate([FromBody] List<CreateBookDto> requests)
+        {
+            if (requests == null || !requests.Any())
+                return BadRequest(new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Book list cannot be empty."
+                });
+
+            if (!ModelState.IsValid)
+                return BadRequest(new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "Invalid book data in list."
+                });
+
+            try
+            {
+                var createdBooks = await _bookService.BulkCreateBooksAsync(requests);
+
+                _logger.LogInformation("{Count} books created successfully.", createdBooks.Count);
+
+                return Ok(new ApiResponse<List<BookDto>>
+                {
+                    IsSuccess = true,
+                    Message = $"{createdBooks.Count} books created successfully.",
+                    Data = createdBooks
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while bulk creating books.");
+
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    IsSuccess = false,
+                    Message = "An unexpected error occurred during bulk creation."
+                });
+            }
         }
 
         // PATCH: api/{id}
@@ -162,15 +208,6 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "Invalid book data."
                 });
             }
-
-            //if (string.IsNullOrWhiteSpace(id))
-            //{
-            //    return BadRequest(new ApiResponse<object>
-            //    {
-            //        IsSuccess = false,
-            //        Message = "Book id is required."
-            //    });
-            //}
 
             try
             {

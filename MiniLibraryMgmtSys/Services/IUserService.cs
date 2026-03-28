@@ -7,10 +7,10 @@ namespace MiniLibraryMgmtSys.Services
     {
         Task<List<UserResponseDTO>> GetAllAsync();
         Task<UserResponseDTO?> GetByIdAsync(string id);
-        Task<TblUser?> CreateAsync(CreateUserDTO dto);
-        Task<string?> RegisterAsync(RegisterDTO dto);
-        Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null);
-        Task<bool> SoftDeleteAsync(string id, string? updatedBy = null);
+        Task<UserServiceResult<UserResponseDTO>> CreateAsync(CreateUserDTO dto);
+        Task<UserServiceResult<string>> RegisterAsync(RegisterDTO dto);
+        Task<UserServiceResult<bool>> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null);
+        Task<UserServiceResult<bool>> SoftDeleteAsync(string id, string? updatedBy = null);
         Task<TblUser?> ValidateUserAsync(string email, string password);
     }
 }

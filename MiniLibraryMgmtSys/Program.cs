@@ -8,7 +8,7 @@ using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using System.Text;
 
-try { 
+try {
     var builder = WebApplication.CreateBuilder(args);
 
     Log.Logger = new LoggerConfiguration()
@@ -34,7 +34,7 @@ try {
     //User Service Registration
     builder.Services.AddScoped<IUserService, UserService>();
     //JWT Tokens Registration
-    builder.Services.AddScoped<GenerateJwtToken>();
+    builder.Services.AddScoped<IJwtTokenService, GenerateJwtToken>();
 
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -69,8 +69,8 @@ try {
     var app = builder.Build();
 
     app.UseRouting();
-    app.UseAuthentication();    // JWT authentication 
-    app.UseAuthorization();     // User permissions 
+    app.UseAuthentication();    // JWT authentication
+    app.UseAuthorization();     // User permissions
 
     app.MapControllerRoute(
         name: "default",

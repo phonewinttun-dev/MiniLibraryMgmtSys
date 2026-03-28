@@ -4,7 +4,6 @@ using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
 using MiniLibraryMgmtSys.Services;
 
-
 namespace MiniLibraryMgmtSys.Controllers
 {
     [ApiController]
@@ -12,12 +11,12 @@ namespace MiniLibraryMgmtSys.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly GenerateJwtToken _jwtToken;
+        private readonly IJwtTokenService _jwtToken;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IUserService userService,
-            GenerateJwtToken jwtToken,
+            IJwtTokenService jwtToken,
             ILogger<AuthController> logger)
         {
             _userService = userService;
@@ -31,43 +30,47 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid registration attempt for: {Email}", dto.Email);
                 return BadRequest(new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "Failed registration attempt."
+                    Message = "Invalid input data."
                 });
             }
-            
+
             try
             {
                 _logger.LogInformation("Registration attempt for: {Email}", dto.Email);
 
-                var userId = await _userService.RegisterAsync(dto);
+                var result = await _userService.RegisterAsync(dto);
 
-                if (userId == null)
+                if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Failed registration attempt for: {Email}", dto.Email);
+                    _logger.LogWarning("Failed registration attempt for: {Email}. Reason: {Reason}", dto.Email, result.Message);
 
-                    return BadRequest("Email already exists.");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = result.Message
+                    });
                 }
 
-                _logger.LogInformation("User: {UserId} registered successfully", userId);
+                _logger.LogInformation("User: {UserId} registered successfully", result.Data);
 
-                return Ok(new
+                return Ok(new ApiResponse<object>
                 {
-                    message = "Registration successful",
-                    userId
+                    IsSuccess = true,
+                    Message = "Registration successful",
+                    Data = new { userId = result.Data }
                 });
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during registration.");
 
                 return StatusCode(500, new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "An unexpected error occured."
+                    Message = "An unexpected error occurred."
                 });
             }
         }
@@ -78,12 +81,10 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Invalid login attempt for: {Email}", dto.Email);
-                
                 return BadRequest(new ApiResponse<object>
                 {
                     IsSuccess = false,
-                    Message = "Failed login attempt."
+                    Message = "Invalid input data."
                 });
             }
 
@@ -97,20 +98,32 @@ namespace MiniLibraryMgmtSys.Controllers
                 {
                     _logger.LogWarning("Failed login attempt for: {Email}", dto.Email);
 
-                    return Unauthorized("Invalid credentials");
+                    return Unauthorized(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = "Invalid credentials"
+                    });
                 }
+
                 var token = _jwtToken.GenerateAccessToken(user);
 
                 _logger.LogInformation("User: {UserId} logged in successfully", user.Id);
 
-                return Ok(new
+                return Ok(new ApiResponse<object>
                 {
-                    message = "Login successful",
-                    token,
-                    user.Id,
-                    user.Name,
-                    user.Email,
-                    user.Role
+                    IsSuccess = true,
+                    Message = "Login successful",
+                    Data = new
+                    {
+                        token,
+                        user = new
+                        {
+                            user.Id,
+                            user.Name,
+                            user.Email,
+                            user.Role
+                        }
+                    }
                 });
             }
             catch (Exception ex)
@@ -124,9 +137,5 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
         }
-
-
-
-
     }
 }

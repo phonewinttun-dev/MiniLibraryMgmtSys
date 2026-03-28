@@ -6,7 +6,7 @@ using System.Text;
 
 namespace MiniLibraryMgmtSys.Infrastructure
 {
-    public class GenerateJwtToken
+    public class GenerateJwtToken : IJwtTokenService
     {
         private readonly IConfiguration _configuration;
 

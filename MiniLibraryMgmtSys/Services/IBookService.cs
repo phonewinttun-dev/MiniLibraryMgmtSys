@@ -10,6 +10,7 @@ namespace MiniLibraryMgmtSys.Services
         Task<List<BookDto>> GetAvailableBooksAsync();
         Task<List<BookDto>> SearchBooksAsync(SearchBookDto search);
         Task<BookDto?> CreateBookAsync(CreateBookDto dto);
+        Task<List<BookDto>> BulkCreateBooksAsync(List<CreateBookDto> dtos);
         Task<bool> UpdateBookAsync(string id, UpdateBookDto dto);
         Task<bool> DeleteBookAsync(string id);
         Task<bool> RestoreBookAsync(string id);

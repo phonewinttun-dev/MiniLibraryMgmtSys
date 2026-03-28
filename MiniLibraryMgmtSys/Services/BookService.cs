@@ -143,6 +143,32 @@ namespace MiniLibraryMgmtSys.Services
             };
         }
 
+        public async Task<List<BookDto>> BulkCreateBooksAsync(List<CreateBookDto> dtos)
+        {
+            var books = dtos.Select(dto => new TblBook
+            {
+                Id = Guid.NewGuid().ToString(),
+                Author = dto.Author,
+                Title = dto.Title,
+                Genre = dto.Genre,
+                IsAvailable = true,
+                DeleteFlag = false,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+
+            _db.TblBooks.AddRange(books);
+            await _db.SaveChangesAsync();
+
+            return books.Select(b => new BookDto
+            {
+                Id = b.Id,
+                Author = b.Author,
+                Title = b.Title,
+                Genre = b.Genre,
+                IsAvailable = b.IsAvailable
+            }).ToList();
+        }
+
         public async Task<bool> UpdateBookAsync(string id, UpdateBookDto dto)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);

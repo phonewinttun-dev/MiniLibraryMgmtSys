@@ -78,15 +78,16 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 _logger.LogInformation("Creating user with email: {Email}", dto.Email);
 
-                var user = await _userService.CreateAsync(dto);
+                var result = await _userService.CreateAsync(dto);
 
-                if (user == null)
+                if (!result.IsSuccess)
                     return Conflict(new ApiResponse<object>
                     {
                         IsSuccess = false,
-                        Message = "Email already exists."
+                        Message = result.Message
                     });
 
+                var user = result.Data!;
                 _logger.LogInformation("User created with id: {UserId}", user.Id);
 
                 return CreatedAtAction(nameof(GetById), new { id = user.Id },
@@ -124,13 +125,13 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 _logger.LogInformation("Updating user with id: {UserId}", id);
 
-                var success = await _userService.UpdateAsync(id, dto);
+                var result = await _userService.UpdateAsync(id, dto);
 
-                if (!success)
+                if (!result.IsSuccess)
                     return NotFound(new ApiResponse<object>
                     {
                         IsSuccess = false,
-                        Message = "User not found."
+                        Message = result.Message
                     });
 
                 _logger.LogInformation("User with id: {UserId} updated successfully.", id);
@@ -139,10 +140,10 @@ namespace MiniLibraryMgmtSys.Controllers
                 {
                     IsSuccess = true,
                     Message = "User updated successfully.",
-                    Data = success
+                    Data = true
                 });
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating user with id: {UserId}", id);
 
@@ -152,7 +153,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "An unexpected error occurred."
                 });
             }
-            
+
         }
 
         [HttpDelete("{id}")]
@@ -166,17 +167,17 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
-            try 
+            try
             {
                 _logger.LogInformation("Deleting user with id: {UserId}", id);
 
-                var success = await _userService.SoftDeleteAsync(id);
+                var result = await _userService.SoftDeleteAsync(id);
 
-                if (!success)                
+                if (!result.IsSuccess)
                 return NotFound(new ApiResponse<object>
                     {
                         IsSuccess = false,
-                        Message = "User not found."
+                        Message = result.Message
                     });
 
                 _logger.LogInformation("User with id: {UserId} deleted successfully.", id);
@@ -197,7 +198,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "An unexpected error occurred."
                 });
             }
-            
+
         }
     }
 }

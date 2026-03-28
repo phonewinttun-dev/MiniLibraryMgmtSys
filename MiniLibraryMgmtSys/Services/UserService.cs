@@ -2,12 +2,14 @@
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
+using System.Text.RegularExpressions;
 
 namespace MiniLibraryMgmtSys.Services
 {
-    public sealed class UserService: IUserService
+    public sealed class UserService : IUserService
     {
         private readonly AppDbContext _db;
+        private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public UserService(AppDbContext db)
         {
@@ -18,19 +20,19 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblUsers.AsNoTracking()
             .Where(u => !u.DeleteFlag);
 
-        //check if email exists
+        private IQueryable<TblUser> ActiveUser =>
+            _db.TblUsers
+            .Where(u => !u.DeleteFlag);
+
         private async Task<bool> EmailExistsAsync(string email)
         {
             email = email.Trim().ToLower();
-
-            return await ExistingUser.AnyAsync(u =>
-                u.Email.ToLower() == email);
+            return await _db.TblUsers.AnyAsync(u => u.Email.ToLower() == email && !u.DeleteFlag);
         }
 
         public async Task<List<UserResponseDTO>> GetAllAsync()
         {
             return await ExistingUser
-                .AsNoTracking()
                 .OrderByDescending(u => u.CreatedAt)
                 .Select(u => new UserResponseDTO
                 {
@@ -45,7 +47,6 @@ namespace MiniLibraryMgmtSys.Services
         public async Task<UserResponseDTO?> GetByIdAsync(string id)
         {
             return await ExistingUser
-                .AsNoTracking()
                 .Where(u => u.Id == id)
                 .Select(u => new UserResponseDTO
                 {
@@ -57,73 +58,50 @@ namespace MiniLibraryMgmtSys.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<TblUser?> CreateAsync(CreateUserDTO dto)
+        public async Task<UserServiceResult<UserResponseDTO>> CreateAsync(CreateUserDTO dto)
         {
-            // Prevent duplicate email
-            var emailExists = await EmailExistsAsync(dto.Email);
+            var result = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role);
+            if (!result.IsSuccess) return UserServiceResult<UserResponseDTO>.Failure(result.Message);
 
-            var emailRegex = new System.Text.RegularExpressions.Regex(
-                            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-                            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            if (emailExists)
-                return null;
-
-            if (!emailRegex.IsMatch(dto.Email.Trim()))
-                return null;
-
-            var allowedRoles = new[] { "Member", "Admin", "Librarian" };
-            var role = string.IsNullOrWhiteSpace(dto.Role) ? "Member" : dto.Role;
-            if (!allowedRoles.Contains(role))
-                role = "Member";
-
-            var user = new TblUser
+            var user = result.Data!;
+            return UserServiceResult<UserResponseDTO>.Success(new UserResponseDTO
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = dto.Name,
-                Email = dto.Email.Trim().ToLower(),
-                Password = PasswordHasher.Hash(dto.Password),
-                Role = role,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsActive = true, 
-                DeleteFlag = false
-            };
-
-            _db.TblUsers.Add(user);
-            await _db.SaveChangesAsync();
-
-            return user;
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Role = user.Role
+            });
         }
 
-        public async Task<string?> RegisterAsync(RegisterDTO dto)
+        public async Task<UserServiceResult<string>> RegisterAsync(RegisterDTO dto)
         {
+            var result = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role ?? UserRoles.Member);
+            if (!result.IsSuccess) return UserServiceResult<string>.Failure(result.Message);
 
-            // Prevent duplicate email
-            var emailExists = await EmailExistsAsync(dto.Email);
+            return UserServiceResult<string>.Success(result.Data!.Id, "Registration successful");
+        }
 
-            var emailRegex = new System.Text.RegularExpressions.Regex(
-                @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        private async Task<UserServiceResult<TblUser>> InternalCreateAsync(string name, string email, string password, string role)
+        {
+            email = email.Trim().ToLower();
 
-            if (emailExists)
-                return null;
+            if (await EmailExistsAsync(email))
+                return UserServiceResult<TblUser>.Failure("Email already exists.");
 
-            if (!emailRegex.IsMatch(dto.Email.Trim()))
-                return ("Invalid Email format!");
+            if (!EmailRegex.IsMatch(email))
+                return UserServiceResult<TblUser>.Failure("Invalid Email format!");
 
-            var allowedRoles = new[] { "Member", "Admin", "Librarian" };
-            var role = string.IsNullOrWhiteSpace(dto.Role) ? "Member" : dto.Role;
-            if (!allowedRoles.Contains(role))
-                role = "Member";
+            var assignedRole = UserRoles.All.Contains(role, StringComparer.OrdinalIgnoreCase)
+                ? role
+                : UserRoles.Member;
 
             var user = new TblUser
             {
                 Id = Guid.NewGuid().ToString(),
-                Name = dto.Name.Trim(),
-                Email = dto.Email.Trim().ToLower(),
-                Password = PasswordHasher.Hash(dto.Password),
-                Role = role.Trim().ToLower(),
+                Name = name.Trim(),
+                Email = email,
+                Password = PasswordHasher.Hash(password),
+                Role = assignedRole,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 IsActive = true,
@@ -133,25 +111,28 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblUsers.Add(user);
             await _db.SaveChangesAsync();
 
-            return user.Id;
+            return UserServiceResult<TblUser>.Success(user);
         }
 
-        public async Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
+        public async Task<UserServiceResult<bool>> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
         {
-            var user = await ExistingUser
+            var user = await ActiveUser
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
-                return false;
+                return UserServiceResult<bool>.Failure("User not found.");
 
             if (!string.IsNullOrWhiteSpace(dto.Name))
                 user.Name = dto.Name.Trim();
 
             if (!string.IsNullOrWhiteSpace(dto.Email))
-                if (await EmailExistsAsync(dto.Email) && dto.Email.Trim().ToLower() != user.Email.ToLower())
-                    return false;
-                else
-                    user.Email = dto.Email;
+            {
+                var newEmail = dto.Email.Trim().ToLower();
+                if (newEmail != user.Email.ToLower() && await EmailExistsAsync(newEmail))
+                    return UserServiceResult<bool>.Failure("Email already exists.");
+
+                user.Email = newEmail;
+            }
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
                 user.Password = PasswordHasher.Hash(dto.Password);
@@ -160,33 +141,32 @@ namespace MiniLibraryMgmtSys.Services
             user.UpdatedBy = updatedBy;
 
             await _db.SaveChangesAsync();
-            return true;
+            return UserServiceResult<bool>.Success(true, "User updated successfully.");
         }
 
-        public async Task<bool> SoftDeleteAsync(string id, string? updatedBy = null)
+        public async Task<UserServiceResult<bool>> SoftDeleteAsync(string id, string? updatedBy = null)
         {
-            var user = await ExistingUser
-                .FirstOrDefaultAsync(u => u.Id == id && !u.DeleteFlag);
+            var user = await ActiveUser
+                .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
-                return false;
+                return UserServiceResult<bool>.Failure("User not found.");
 
             user.DeleteFlag = true;
             user.UpdatedAt = DateTime.UtcNow;
             user.UpdatedBy = updatedBy;
 
             await _db.SaveChangesAsync();
-            return true;
+            return UserServiceResult<bool>.Success(true, "User deleted successfully.");
         }
 
         public async Task<TblUser?> ValidateUserAsync(string email, string password)
         {
             email = email.Trim().ToLower();
 
-            var user = await _db.TblUsers
+            var user = await ActiveUser
                 .FirstOrDefaultAsync(u =>
                     u.Email == email &&
-                    !u.DeleteFlag &&
                     u.IsActive);
 
             if (user == null)
