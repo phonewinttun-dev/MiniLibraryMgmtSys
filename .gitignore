@@ -363,3 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 /modules_checklist.md
 /MiniLibraryMgmtSys/PostmanCollection.json
+/MiniLibraryMgmtSys/build_output.txt
+/MiniLibraryMgmtSys/build_output_2.txt
+/MiniLibraryMgmtSys/build_output_3.txt
+/MiniLibraryMgmtSys/build_output_4.txt
+/MiniLibraryMgmtSys.postman_collection.json
