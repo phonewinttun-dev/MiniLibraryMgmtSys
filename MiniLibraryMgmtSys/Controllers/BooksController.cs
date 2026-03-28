@@ -101,6 +101,21 @@ namespace MiniLibraryMgmtSys.Controllers
             });
         }
 
+        // GET: api/books/search
+        [HttpGet("search")]
+        [Authorize(Roles = "Admin, Librarian, Member")]
+        public async Task<IActionResult> GetBySearch([FromQuery] SearchBookDto search)
+        {
+            var books = await _bookService.SearchBooksAsync(search);
+
+            return Ok(new ApiResponse<List<BookDto>>
+            {
+                IsSuccess = true,
+                Message = "Books retrieved successfully.",
+                Data = books
+            });
+        }
+
         // POST: api/books
         [HttpPost]
         [Authorize(Roles = "Admin, Librarian")]
@@ -249,6 +264,20 @@ namespace MiniLibraryMgmtSys.Controllers
                 });
             }
 
+        }
+
+        // PATCH: api/books/{id}/status
+        [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Admin, Librarian")]
+        public async Task<IActionResult> UpdateStatus(string id, [FromQuery] bool isAvailable)
+        {
+            var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
+            var result = await _bookService.UpdateStatusAsync(id, isAvailable, user);
+
+            if (!result)
+                return NotFound(new ApiResponse<object> { IsSuccess = false, Message = "Book not found." });
+
+            return Ok(new ApiResponse<object> { IsSuccess = true, Message = "Book status updated successfully." });
         }
 
         // DELETE: api/{id}

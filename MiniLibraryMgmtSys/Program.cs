@@ -33,6 +33,8 @@ try {
     builder.Services.AddScoped<IBookService, BookService>();
     //User Service Registration
     builder.Services.AddScoped<IUserService, UserService>();
+    //Borrow Service Registration
+    builder.Services.AddScoped<IBorrowService, BorrowService>();
     //JWT Tokens Registration
     builder.Services.AddScoped<IJwtTokenService, GenerateJwtToken>();
 

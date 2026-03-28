@@ -26,7 +26,14 @@ namespace MiniLibraryMgmtSys.Controllers
         [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> GetAll()
         {
+            var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
             var users = await _userService.GetAllAsync();
+
+            // Access control: Librarian can only see Members
+            if (currentUserRole == "Librarian")
+            {
+                users = users.Where(u => u.Role == "Member").ToList();
+            }
 
             return Ok(new ApiResponse<object>
             {
@@ -47,6 +54,7 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User id is required."
                 });
 
+            var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
             var user = await _userService.GetByIdAsync(id);
 
             if (user == null)
@@ -56,12 +64,72 @@ namespace MiniLibraryMgmtSys.Controllers
                     Message = "User not found."
                 });
 
+            // Access control: Librarian can only see Members
+            if (currentUserRole == "Librarian" && user.Role != "Member")
+            {
+                return Forbid();
+            }
+
             return Ok(new ApiResponse<object>
             {
                 IsSuccess = true,
                 Message = "User retrieved successfully.",
                 Data = user
             });
+        }
+
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var user = await _userService.GetByIdAsync(userId);
+            if (user == null) return NotFound(new ApiResponse<object> { IsSuccess = false, Message = "Profile not found." });
+
+            return Ok(new ApiResponse<object>
+            {
+                IsSuccess = true,
+                Message = "Profile retrieved successfully.",
+                Data = user
+            });
+        }
+
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserDTO dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            try
+            {
+                _logger.LogInformation("Updating profile for user id: {UserId}", userId);
+
+                // Prevent members from updating their own role via profile update if the DTO allows it
+
+                var result = await _userService.UpdateAsync(userId, dto, userId);
+
+                if (!result.IsSuccess)
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        IsSuccess = false,
+                        Message = result.Message
+                    });
+
+                return Ok(new ApiResponse<object>
+                {
+                    IsSuccess = true,
+                    Message = "Profile updated successfully.",
+                    Data = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating profile for user id: {UserId}", userId);
+                return StatusCode(500, new ApiResponse<object> { IsSuccess = false, Message = "An unexpected error occurred." });
+            }
         }
 
         [HttpPost]
