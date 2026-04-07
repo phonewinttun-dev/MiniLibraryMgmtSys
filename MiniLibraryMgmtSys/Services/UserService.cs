@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace MiniLibraryMgmtSys.Services
 {
-    public sealed class UserService : IUserService
+    public class UserService : IUserService
     {
         private readonly AppDbContext _db;
         private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -27,7 +27,7 @@ namespace MiniLibraryMgmtSys.Services
         private async Task<bool> EmailExistsAsync(string email)
         {
             email = email.Trim().ToLower();
-            return await _db.TblUsers.AnyAsync(u => u.Email.ToLower() == email && !u.DeleteFlag);
+            return await _db.TblUsers.AnyAsync(u => u.Email == email && !u.DeleteFlag);
         }
 
         public async Task<List<UserResponseDTO>> GetAllAsync()
@@ -64,42 +64,17 @@ namespace MiniLibraryMgmtSys.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<UserServiceResult<UserResponseDTO>> CreateAsync(CreateUserDTO dto)
-        {
-            var result = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role);
-            if (!result.IsSuccess) return UserServiceResult<UserResponseDTO>.Failure(result.Message);
-
-            var user = result.Data!;
-            return UserServiceResult<UserResponseDTO>.Success(new UserResponseDTO
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                UpdatedBy = user.UpdatedBy
-            });
-        }
-
-        public async Task<UserServiceResult<string>> RegisterAsync(RegisterDTO dto)
-        {
-            var result = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role ?? UserRoles.Member);
-            if (!result.IsSuccess) return UserServiceResult<string>.Failure(result.Message);
-
-            return UserServiceResult<string>.Success(result.Data!.Id, "Registration successful");
-        }
-
-        private async Task<UserServiceResult<TblUser>> InternalCreateAsync(string name, string email, string password, string role)
+        private async Task<TblUser?> InternalCreateAsync(string name, string email, string password, string role)
         {
             email = email.Trim().ToLower();
 
             if (await EmailExistsAsync(email))
-                return UserServiceResult<TblUser>.Failure("Email already exists.");
+                return null;
 
             if (!EmailRegex.IsMatch(email))
-                return UserServiceResult<TblUser>.Failure("Invalid Email format!");
+                return null;
 
+            
             var assignedRole = UserRoles.All.Contains(role, StringComparer.OrdinalIgnoreCase)
                 ? role
                 : UserRoles.Member;
@@ -120,16 +95,42 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblUsers.Add(user);
             await _db.SaveChangesAsync();
 
-            return UserServiceResult<TblUser>.Success(user);
+            return user;
         }
 
-        public async Task<UserServiceResult<bool>> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
+        public async Task<UserResponseDTO?> CreateAsync(CreateUserDTO dto)
+        {
+            var user = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role);
+            if (user == null) return null;
+
+            return new UserResponseDTO
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Role = user.Role,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                UpdatedBy = user.UpdatedBy
+            };
+        }
+
+        public async Task<string?> RegisterAsync(RegisterDTO dto)
+        {
+            var user = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role ?? UserRoles.Member);
+            if (user == null) return null;
+
+            return user.Id;
+        }
+
+
+        public async Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
         {
             var user = await ActiveUser
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
-                return UserServiceResult<bool>.Failure("User not found.");
+                return false;
 
             if (!string.IsNullOrWhiteSpace(dto.Name))
                 user.Name = dto.Name.Trim();
@@ -138,7 +139,7 @@ namespace MiniLibraryMgmtSys.Services
             {
                 var newEmail = dto.Email.Trim().ToLower();
                 if (newEmail != user.Email.ToLower() && await EmailExistsAsync(newEmail))
-                    return UserServiceResult<bool>.Failure("Email already exists.");
+                    return false;
 
                 user.Email = newEmail;
             }
@@ -150,23 +151,23 @@ namespace MiniLibraryMgmtSys.Services
             user.UpdatedBy = updatedBy;
 
             await _db.SaveChangesAsync();
-            return UserServiceResult<bool>.Success(true, "User updated successfully.");
+            return true;
         }
 
-        public async Task<UserServiceResult<bool>> SoftDeleteAsync(string id, string? updatedBy = null)
+        public async Task<bool> SoftDeleteAsync(string id, string? updatedBy = null)
         {
             var user = await ActiveUser
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
-                return UserServiceResult<bool>.Failure("User not found.");
+                return false;
 
             user.DeleteFlag = true;
             user.UpdatedAt = DateTime.UtcNow;
             user.UpdatedBy = updatedBy;
 
             await _db.SaveChangesAsync();
-            return UserServiceResult<bool>.Success(true, "User deleted successfully.");
+            return true;
         }
 
         public async Task<TblUser?> ValidateUserAsync(string email, string password)

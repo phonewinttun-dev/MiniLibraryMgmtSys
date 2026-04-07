@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTO;
+using MiniLibraryMgmtSys.Infrastructure;
 using MiniLibraryMgmtSys.Services;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ namespace MiniLibraryMgmtSys.Controllers
 {
     [ApiController]
     [Route("api/borrow")]
-    [Authorize]
+    [Authorize(Roles = "Member")]
     public class BorrowController : ControllerBase
     {
         private readonly IBorrowService _borrowService;
@@ -31,10 +32,10 @@ namespace MiniLibraryMgmtSys.Controllers
             _logger.LogInformation("User {UserId} is borrowing book {BookId}", userId, request.BookId);
             var result = await _borrowService.BorrowBookAsync(userId, request.BookId);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
+            if (result == null)
+                return BadRequest(ApiResponse<BorrowResponseDto>.Failure("Failed to borrow book."));
 
-            return Ok(result);
+            return Ok(ApiResponse<BorrowResponseDto>.Success(result, "Book borrowed successfully."));
         }
 
         [HttpPost("return")]
@@ -46,10 +47,10 @@ namespace MiniLibraryMgmtSys.Controllers
             _logger.LogInformation("User {UserId} is returning book {BookId}", userId, request.BookId);
             var result = await _borrowService.ReturnBookAsync(userId, request.BookId);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
+            if (!result)
+                return BadRequest(ApiResponse<bool>.Failure("Failed to return book."));
 
-            return Ok(result);
+            return Ok(ApiResponse<bool>.Success(true, "Book returned successfully."));
         }
 
         [HttpGet("history")]
@@ -59,7 +60,7 @@ namespace MiniLibraryMgmtSys.Controllers
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var result = await _borrowService.GetUserBorrowingHistoryAsync(userId);
-            return Ok(result);
+            return Ok(ApiResponse<List<BorrowResponseDto>>.Success(result, "Borrowing history retrieved successfully."));
         }
 
         [HttpGet("all-history")]
@@ -67,7 +68,7 @@ namespace MiniLibraryMgmtSys.Controllers
         public async Task<IActionResult> GetAllHistory()
         {
             var result = await _borrowService.GetAllBorrowingHistoryAsync();
-            return Ok(result);
+            return Ok(ApiResponse<List<BorrowResponseDto>>.Success(result, "All borrowing history retrieved successfully."));
         }
     }
 }

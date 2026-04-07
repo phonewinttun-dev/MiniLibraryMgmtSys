@@ -7,6 +7,7 @@ using MiniLibraryMgmtSys.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using System.Text;
+using Scalar.AspNetCore;
 
 try {
     var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +36,8 @@ try {
     builder.Services.AddScoped<IUserService, UserService>();
     //Borrow Service Registration
     builder.Services.AddScoped<IBorrowService, BorrowService>();
+    //Dashboard Service Registration
+    builder.Services.AddScoped<IDashboardService, DashboardService>();
     //JWT Tokens Registration
     builder.Services.AddScoped<IJwtTokenService, GenerateJwtToken>();
 
@@ -42,6 +45,7 @@ try {
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -79,11 +83,17 @@ try {
         pattern: "{controller=Home}/{action=Index}/{id?}");
 
     // Configure the HTTP request pipeline.
+    //if (app.Environment.IsDevelopment())
+    //{
+    //    app.UseSwagger();
+    //    app.UseSwaggerUI();
+    //}
     if (app.Environment.IsDevelopment())
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        app.MapSwagger("/openapi/{documentName}.json");
+        app.MapScalarApiReference();
     }
+
 
     app.UseHttpsRedirection();
 

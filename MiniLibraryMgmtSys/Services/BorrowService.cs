@@ -18,25 +18,22 @@ namespace MiniLibraryMgmtSys.Services
             _db = db;
         }
 
-        public async Task<ApiResponse<BorrowResponseDto>> BorrowBookAsync(string userId, string bookId)
+        public async Task<BorrowResponseDto?> BorrowBookAsync(string userId, string bookId)
         {
             var book = await _db.TblBooks.FirstOrDefaultAsync(b => b.Id == bookId && !b.DeleteFlag);
-            if (book == null)
-                return new ApiResponse<BorrowResponseDto> { IsSuccess = false, Message = "Book not found." };
-
-            if (!book.IsAvailable)
-                return new ApiResponse<BorrowResponseDto> { IsSuccess = false, Message = "Book is already borrowed." };
+            if (book == null || !book.IsAvailable)
+                return null;
 
             var user = await _db.TblUsers.FirstOrDefaultAsync(u => u.Id == userId && !u.DeleteFlag);
             if (user == null)
-                return new ApiResponse<BorrowResponseDto> { IsSuccess = false, Message = "User not found." };
+                return null;
 
             // Prevent double borrow of the same book by the same user if not returned
             var existingBorrow = await _db.TblBorrowedBooks
                 .AnyAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.ReturnedAt == null);
 
             if (existingBorrow)
-                return new ApiResponse<BorrowResponseDto> { IsSuccess = false, Message = "You already have this book borrowed." };
+                return null;
 
             var borrowRecord = new TblBorrowedBook
             {
@@ -55,22 +52,17 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblBorrowedBooks.Add(borrowRecord);
             await _db.SaveChangesAsync();
 
-            return new ApiResponse<BorrowResponseDto>
-            {
-                IsSuccess = true,
-                Message = "Book borrowed successfully.",
-                Data = MapToDto(borrowRecord, book, user)
-            };
+            return MapToDto(borrowRecord, book, user);
         }
 
-        public async Task<ApiResponse<bool>> ReturnBookAsync(string userId, string bookId)
+        public async Task<bool> ReturnBookAsync(string userId, string bookId)
         {
             var borrowRecord = await _db.TblBorrowedBooks
                 .Include(bb => bb.Book)
                 .FirstOrDefaultAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.ReturnedAt == null);
 
             if (borrowRecord == null)
-                return new ApiResponse<bool> { IsSuccess = false, Message = "No active borrow record found for this book and user." };
+                return false;
 
             borrowRecord.ReturnedAt = DateTime.UtcNow;
             borrowRecord.UpdatedAt = DateTime.UtcNow;
@@ -81,10 +73,10 @@ namespace MiniLibraryMgmtSys.Services
 
             await _db.SaveChangesAsync();
 
-            return new ApiResponse<bool> { IsSuccess = true, Message = "Book returned successfully.", Data = true };
+            return true;
         }
 
-        public async Task<ApiResponse<List<BorrowResponseDto>>> GetUserBorrowingHistoryAsync(string userId)
+        public async Task<List<BorrowResponseDto>> GetUserBorrowingHistoryAsync(string userId)
         {
             var history = await _db.TblBorrowedBooks
                 .Include(bb => bb.Book)
@@ -94,15 +86,10 @@ namespace MiniLibraryMgmtSys.Services
                 .Select(bb => MapToDto(bb, bb.Book, bb.User))
                 .ToListAsync();
 
-            return new ApiResponse<List<BorrowResponseDto>>
-            {
-                IsSuccess = true,
-                Message = "Borrowing history retrieved successfully.",
-                Data = history
-            };
+            return history;
         }
 
-        public async Task<ApiResponse<List<BorrowResponseDto>>> GetAllBorrowingHistoryAsync()
+        public async Task<List<BorrowResponseDto>> GetAllBorrowingHistoryAsync()
         {
             var history = await _db.TblBorrowedBooks
                 .Include(bb => bb.Book)
@@ -111,12 +98,7 @@ namespace MiniLibraryMgmtSys.Services
                 .Select(bb => MapToDto(bb, bb.Book, bb.User))
                 .ToListAsync();
 
-            return new ApiResponse<List<BorrowResponseDto>>
-            {
-                IsSuccess = true,
-                Message = "All borrowing history retrieved successfully.",
-                Data = history
-            };
+            return history;
         }
 
         private static BorrowResponseDto MapToDto(TblBorrowedBook bb, TblBook book, TblUser user)

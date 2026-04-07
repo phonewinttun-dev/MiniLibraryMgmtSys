@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTO;
+using MiniLibraryMgmtSys.Infrastructure;
 using MiniLibraryMgmtSys.Services;
 using System.Security.Claims;
 
@@ -45,12 +46,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             var books = await _bookService.GetBooksAsync();
 
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Books retrieved successfully.",
-                Data = books
-            });
+            return Ok(ApiResponse<List<BookDto>>.Success(books, "Books retrieved successfully."));
         }
 
         // GET: api/availableBooks
@@ -60,12 +56,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             var books = await _bookService.GetAvailableBooksAsync();
 
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Books retrieved successfully.",
-                Data = books
-            });
+            return Ok(ApiResponse<List<BookDto>>.Success(books, "Books retrieved successfully."));
         }
 
         // GET: api/books/{id}
@@ -75,30 +66,17 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                return BadRequest(new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid book ID."
-                });
+                return BadRequest(ApiResponse<BookDto>.Failure("Invalid book ID."));
             }
 
             var book = await _bookService.GetBookByIdAsync(id);
 
             if (book is null)
             {
-                return NotFound(new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "Book not found."
-                });
+                return NotFound(ApiResponse<BookDto>.Failure("Book not found."));
             }
 
-            return Ok(new ApiResponse<BookDto>
-            {
-                IsSuccess = true,
-                Message = "Book retrieved successfully.",
-                Data = book
-            });
+            return Ok(ApiResponse<BookDto>.Success(book, "Book retrieved successfully."));
         }
 
         // GET: api/books/search
@@ -108,12 +86,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             var books = await _bookService.SearchBooksAsync(search);
 
-            return Ok(new ApiResponse<List<BookDto>>
-            {
-                IsSuccess = true,
-                Message = "Books retrieved successfully.",
-                Data = books
-            });
+            return Ok(ApiResponse<List<BookDto>>.Success(books, "Books retrieved successfully."));
         }
 
         // POST: api/books
@@ -122,11 +95,7 @@ namespace MiniLibraryMgmtSys.Controllers
         public async Task<IActionResult> Create([FromBody] CreateBookDto request)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid book data."
-                });
+                return BadRequest(ApiResponse<object>.Failure("Invalid book data."));
 
             try
             {
@@ -136,11 +105,7 @@ namespace MiniLibraryMgmtSys.Controllers
 
                 if (createdBook == null)
                 {
-                    return StatusCode(500, new ApiResponse<BookDto>
-                    {
-                        IsSuccess = false,
-                        Message = "Failed to create book."
-                    });
+                    return StatusCode(500, ApiResponse<BookDto>.Failure("Failed to create book."));
                 }
 
                 _logger.LogInformation(
@@ -152,22 +117,13 @@ namespace MiniLibraryMgmtSys.Controllers
                 return CreatedAtAction(
                     nameof(GetById),
                     new { id = createdBook!.Id },
-                    new ApiResponse<BookDto>
-                    {
-                        IsSuccess = true,
-                        Message = "Book created successfully.",
-                        Data = createdBook
-                    });
+                    ApiResponse<BookDto>.Success(createdBook, "Book created successfully."));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while creating a book.");
 
-                return StatusCode(500, new ApiResponse<BookDto>
-                {
-                    IsSuccess = false,
-                    Message = "An unexpected error occured."
-                });
+                return StatusCode(500, ApiResponse<BookDto>.Failure("An unexpected error occured."));
             }
 
         }
@@ -178,18 +134,10 @@ namespace MiniLibraryMgmtSys.Controllers
         public async Task<IActionResult> BulkCreate([FromBody] List<CreateBookDto> requests)
         {
             if (requests == null || !requests.Any())
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Book list cannot be empty."
-                });
+                return BadRequest(ApiResponse<object>.Failure("Book list cannot be empty."));
 
             if (!ModelState.IsValid)
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid book data in list."
-                });
+                return BadRequest(ApiResponse<object>.Failure("Invalid book data in list."));
 
             try
             {
@@ -198,22 +146,13 @@ namespace MiniLibraryMgmtSys.Controllers
 
                 _logger.LogInformation("{Count} books created successfully.", createdBooks.Count);
 
-                return Ok(new ApiResponse<List<BookDto>>
-                {
-                    IsSuccess = true,
-                    Message = $"{createdBooks.Count} books created successfully.",
-                    Data = createdBooks
-                });
+                return Ok(ApiResponse<List<BookDto>>.Success(createdBooks, $"{createdBooks.Count} books created successfully."));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while bulk creating books.");
 
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "An unexpected error occurred during bulk creation."
-                });
+                return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred during bulk creation."));
             }
         }
 
@@ -224,11 +163,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             if (request == null || !ModelState.IsValid)
             {
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid book data."
-                });
+                return BadRequest(ApiResponse<object>.Failure("Invalid book data."));
             }
 
             try
@@ -238,30 +173,18 @@ namespace MiniLibraryMgmtSys.Controllers
 
                 if (!updated)
                 {
-                    return NotFound(new ApiResponse<object>
-                    {
-                        IsSuccess = false,
-                        Message = "Book not found."
-                    });
+                    return NotFound(ApiResponse<object>.Failure("Book not found."));
                 }
 
                 _logger.LogInformation("Book updated successfully with ID: {BookId}", id);
 
-                return Ok(new ApiResponse<object>
-                {
-                    IsSuccess = true,
-                    Message = "Book updated successfully."
-                });
+                return Ok(ApiResponse<object>.Success(true, "Book updated successfully."));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating the book with ID: {BookId}", id);
 
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = $"An error occurred while updating the book: {ex.Message}"
-                });
+                return StatusCode(500, ApiResponse<object>.Failure($"An error occurred while updating the book: {ex.Message}"));
             }
 
         }
@@ -275,9 +198,9 @@ namespace MiniLibraryMgmtSys.Controllers
             var result = await _bookService.UpdateStatusAsync(id, isAvailable, user);
 
             if (!result)
-                return NotFound(new ApiResponse<object> { IsSuccess = false, Message = "Book not found." });
+                return NotFound(ApiResponse<object>.Failure("Book not found."));
 
-            return Ok(new ApiResponse<object> { IsSuccess = true, Message = "Book status updated successfully." });
+            return Ok(ApiResponse<object>.Success(true, "Book status updated successfully."));
         }
 
         // DELETE: api/{id}
@@ -287,11 +210,7 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Book id is required."
-                });
+                return BadRequest(ApiResponse<object>.Failure("Book id is required."));
             }
 
             try
@@ -301,31 +220,19 @@ namespace MiniLibraryMgmtSys.Controllers
 
                 if (!deleted)
                 {
-                    return NotFound(new ApiResponse<object>
-                    {
-                        IsSuccess = false,
-                        Message = "Book not found."
-                    });
+                    return NotFound(ApiResponse<object>.Failure("Book not found."));
                 }
 
                 _logger.LogInformation("Book deleted successfully with ID: {BookId}", id);
 
-                return Ok(new ApiResponse<object>
-                {
-                    IsSuccess = true,
-                    Message = "Book deleted successfully."
-                });
+                return Ok(ApiResponse<object>.Success(true, "Book deleted successfully."));
             }
             catch (Exception ex)
             {
 
                 _logger.LogError(ex, "Error occurred while deleting the book with ID: {BookId}", id);
 
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "An unexpected error occurred while deleting the book."
-                });
+                return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred while deleting the book."));
             }
 
         }

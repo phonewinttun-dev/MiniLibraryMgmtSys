@@ -6,9 +6,9 @@ namespace MiniLibraryMgmtSys.Services
 {
     public interface IBorrowService
     {
-        Task<ApiResponse<BorrowResponseDto>> BorrowBookAsync(string userId, string bookId);
-        Task<ApiResponse<bool>> ReturnBookAsync(string userId, string bookId);
-        Task<ApiResponse<List<BorrowResponseDto>>> GetUserBorrowingHistoryAsync(string userId);
-        Task<ApiResponse<List<BorrowResponseDto>>> GetAllBorrowingHistoryAsync();
+        Task<BorrowResponseDto?> BorrowBookAsync(string userId, string bookId);
+        Task<bool> ReturnBookAsync(string userId, string bookId);
+        Task<List<BorrowResponseDto>> GetUserBorrowingHistoryAsync(string userId);
+        Task<List<BorrowResponseDto>> GetAllBorrowingHistoryAsync();
     }
 }

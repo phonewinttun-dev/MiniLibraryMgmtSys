@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
@@ -41,27 +41,18 @@ namespace MiniLibraryMgmtSys.Controllers
             {
                 _logger.LogInformation("Registration attempt for: {Email}", dto.Email);
 
-                var result = await _userService.RegisterAsync(dto);
+                var userId = await _userService.RegisterAsync(dto);
 
-                if (!result.IsSuccess)
+                if (userId == null)
                 {
-                    _logger.LogWarning("Failed registration attempt for: {Email}. Reason: {Reason}", dto.Email, result.Message);
+                    _logger.LogWarning("Failed registration attempt for: {Email}. Reason: User already exists or invalid data.", dto.Email);
 
-                    return BadRequest(new ApiResponse<object>
-                    {
-                        IsSuccess = false,
-                        Message = result.Message
-                    });
+                    return BadRequest(ApiResponse<object>.Failure("Registration failed. Email might already exist."));
                 }
 
-                _logger.LogInformation("User: {UserId} registered successfully", result.Data);
+                _logger.LogInformation("User: {UserId} registered successfully", userId);
 
-                return Ok(new ApiResponse<object>
-                {
-                    IsSuccess = true,
-                    Message = "Registration successful",
-                    Data = new { userId = result.Data }
-                });
+                return Ok(ApiResponse<object>.Success(new { userId }, "Registration successful"));
             }
             catch (Exception ex)
             {
@@ -98,33 +89,24 @@ namespace MiniLibraryMgmtSys.Controllers
                 {
                     _logger.LogWarning("Failed login attempt for: {Email}", dto.Email);
 
-                    return Unauthorized(new ApiResponse<object>
-                    {
-                        IsSuccess = false,
-                        Message = "Invalid credentials"
-                    });
+                    return Unauthorized(ApiResponse<object>.Failure("Invalid credentials"));
                 }
 
                 var token = _jwtToken.GenerateAccessToken(user);
 
                 _logger.LogInformation("User: {UserId} logged in successfully", user.Id);
 
-                return Ok(new ApiResponse<object>
+                return Ok(ApiResponse<object>.Success(new
                 {
-                    IsSuccess = true,
-                    Message = "Login successful",
-                    Data = new
+                    token,
+                    user = new
                     {
-                        token,
-                        user = new
-                        {
-                            user.Id,
-                            user.Name,
-                            user.Email,
-                            user.Role
-                        }
+                        user.Id,
+                        user.Name,
+                        user.Email,
+                        user.Role
                     }
-                });
+                }, "Login successful"));
             }
             catch (Exception ex)
             {

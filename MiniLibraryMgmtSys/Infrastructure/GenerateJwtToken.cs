@@ -17,8 +17,10 @@ namespace MiniLibraryMgmtSys.Infrastructure
 
         public string GenerateAccessToken(TblUser user)
         {
+            // Get JWT settings from configuration
             var jwt = _configuration.GetSection("Jwt");
 
+            // claims = data inside the token, which can be used to identify the user and their permissions
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
@@ -26,12 +28,19 @@ namespace MiniLibraryMgmtSys.Infrastructure
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
+            // create security key
+            // key string -> byte array -> symmetric security key
+            // utf8 for converting string to byte array (binary key) and vice versa 
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwt["Key"]!)
+                Encoding.UTF8.GetBytes(jwt["Key"] ?? throw new Exception("No Jwt key found!"))
             );
 
+                
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            // create token
+            // issuer = who created the token
+            // audience = who can use the token
             var token = new JwtSecurityToken(
                 issuer: jwt["Issuer"],
                 audience: jwt["Audience"],
