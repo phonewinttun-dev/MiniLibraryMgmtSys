@@ -1,6 +1,4 @@
-﻿using MiniLibraryMgmtSys.Services;
-
-namespace MiniLibraryMgmtSys.Infrastructure
+﻿namespace MiniLibraryMgmtSys.Infrastructure
 {
     public class ApiResponse<T>
     {

@@ -2,11 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Infrastructure;
-using MiniLibraryMgmtSys.Services;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace MiniLibraryMgmtSys.Controllers
+namespace MiniLibraryMgmtSys.Domain.Features.Borrow
 {
     [ApiController]
     [Route("api/borrow")]
@@ -14,22 +13,19 @@ namespace MiniLibraryMgmtSys.Controllers
     public class BorrowController : ControllerBase
     {
         private readonly IBorrowService _borrowService;
-        private readonly ILogger<BorrowController> _logger;
 
-        public BorrowController(IBorrowService borrowService, ILogger<BorrowController> logger)
+        public BorrowController(IBorrowService borrowService)
         {
             _borrowService = borrowService;
-            _logger = logger;
         }
 
         [HttpPost("borrow")]
         public async Task<IActionResult> Borrow([FromBody] BorrowRequestDto request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) 
+            if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            _logger.LogInformation("User {UserId} is borrowing book {BookId}", userId, request.BookId);
             var result = await _borrowService.BorrowBookAsync(userId, request.BookId);
 
             if (result == null)
@@ -44,7 +40,6 @@ namespace MiniLibraryMgmtSys.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            _logger.LogInformation("User {UserId} is returning book {BookId}", userId, request.BookId);
             var result = await _borrowService.ReturnBookAsync(userId, request.BookId);
 
             if (!result)

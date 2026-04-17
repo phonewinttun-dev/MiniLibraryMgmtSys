@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.Dashboard
 {
     public class DashboardService : IDashboardService
     {
@@ -17,7 +17,7 @@ namespace MiniLibraryMgmtSys.Services
             _db = db;
         }
 
-        public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
+        public async Task<ApiResponse<DashboardSummaryDto>> GetDashboardSummaryAsync()
         {
             var overdueDate = DateTime.UtcNow.AddDays(-OverdueDays);
 
@@ -32,12 +32,12 @@ namespace MiniLibraryMgmtSys.Services
                 totalBooks,
                 availableBooks,
                 borrowedBooks,
-                totalMembers, 
-                activeBorrows, 
+                totalMembers,
+                activeBorrows,
                 overdueBorrows
-                );
+            );
 
-            return new DashboardSummaryDto
+            var summary = new DashboardSummaryDto
             {
                 TotalBooks = await totalBooks,
                 AvailableBooksCount = await availableBooks,
@@ -46,6 +46,8 @@ namespace MiniLibraryMgmtSys.Services
                 ActiveBorrowCount = await activeBorrows,
                 OverdueBorrowCount = await overdueBorrows
             };
+
+            return ApiResponse<DashboardSummaryDto>.Success(summary);
         }
     }
 }

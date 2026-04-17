@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniLibraryMgmtSys.Domain.Features.User;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
 using MiniLibraryMgmtSys.Services;
@@ -14,13 +15,9 @@ namespace MiniLibraryMgmtSys.Controllers
     {
         private readonly IUserService _userService;
 
-        private readonly ILogger<UsersController> _logger;
-
-        public UsersController(IUserService userService,
-            ILogger<UsersController> logger)
+        public UsersController(IUserService userService)
         {
             _userService = userService;
-            _logger = logger;
         }
 
         [HttpGet]
@@ -85,8 +82,6 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                _logger.LogInformation("Updating profile for user id: {UserId}", userId);
-
                 var success = await _userService.UpdateAsync(userId, dto, userId);
 
                 if (!success)
@@ -96,7 +91,6 @@ namespace MiniLibraryMgmtSys.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while updating profile for user id: {UserId}", userId);
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
         }
@@ -110,22 +104,16 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                _logger.LogInformation("Creating user with email: {Email}", dto.Email);
-
                 var user = await _userService.CreateAsync(dto);
 
                 if (user == null)
                     return Conflict(ApiResponse<object>.Failure("Failed to create user. Email might already exist."));
-
-                _logger.LogInformation("User created with id: {UserId}", user.Id);
 
                 return CreatedAtAction(nameof(GetById), new { id = user.Id },
                     ApiResponse<UserResponseDTO>.Success(user, "User created successfully."));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating user with email: {Email}", dto.Email);
-
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
         }
@@ -139,22 +127,16 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                _logger.LogInformation("Updating user with id: {UserId}", id);
-
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
                 var success = await _userService.UpdateAsync(id, dto, currentUserId);
 
                 if (!success)
                     return NotFound(ApiResponse<object>.Failure("User not found or update failed."));
 
-                _logger.LogInformation("User with id: {UserId} updated successfully.", id);
-
                 return Ok(ApiResponse<bool>.Success(true, "User updated successfully."));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while updating user with id: {UserId}", id);
-
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
         }
@@ -168,22 +150,16 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                _logger.LogInformation("Deleting user with id: {UserId}", id);
-
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
                 var success = await _userService.SoftDeleteAsync(id, currentUserId);
 
                 if (!success)
                     return NotFound(ApiResponse<object>.Failure("User not found."));
 
-                _logger.LogInformation("User with id: {UserId} deleted successfully.", id);
-
                 return Ok(ApiResponse<object>.Success(true, "User deleted successfully."));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while deleting user with id: {UserId}", id);
-
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
         }

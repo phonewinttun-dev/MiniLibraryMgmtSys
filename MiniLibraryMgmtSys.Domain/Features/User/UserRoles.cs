@@ -1,4 +1,4 @@
-namespace MiniLibraryMgmtSys.Infrastructure
+namespace MiniLibraryMgmtSys.Domain
 {
     public static class UserRoles
     {

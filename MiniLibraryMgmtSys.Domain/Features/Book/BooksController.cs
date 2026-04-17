@@ -2,11 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Infrastructure;
-using MiniLibraryMgmtSys.Services;
 using System.Security.Claims;
 
 
-namespace MiniLibraryMgmtSys.Controllers
+namespace MiniLibraryMgmtSys.Domain.Features.Book
 {
     [ApiController]
     [Route("api/books")]
@@ -15,12 +14,10 @@ namespace MiniLibraryMgmtSys.Controllers
     {
 
         private readonly IBookService _bookService;
-        private readonly ILogger<BooksController> _logger;
 
-        public BooksController(IBookService bookService, ILogger<BooksController> logger)
+        public BooksController(IBookService bookService)
         {
             _bookService = bookService;
-            _logger = logger;
         }
 
 
@@ -108,12 +105,6 @@ namespace MiniLibraryMgmtSys.Controllers
                     return StatusCode(500, ApiResponse<BookDto>.Failure("Failed to create book."));
                 }
 
-                _logger.LogInformation(
-                    "Book created successfully. BookId: {BookId}, User: {User}",
-                    createdBook.Id,
-                    user
-                );
-
                 return CreatedAtAction(
                     nameof(GetById),
                     new { id = createdBook!.Id },
@@ -121,8 +112,6 @@ namespace MiniLibraryMgmtSys.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating a book.");
-
                 return StatusCode(500, ApiResponse<BookDto>.Failure("An unexpected error occured."));
             }
 
@@ -144,14 +133,10 @@ namespace MiniLibraryMgmtSys.Controllers
                 var user = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
                 var createdBooks = await _bookService.BulkCreateBooksAsync(requests, user);
 
-                _logger.LogInformation("{Count} books created successfully.", createdBooks.Count);
-
                 return Ok(ApiResponse<List<BookDto>>.Success(createdBooks, $"{createdBooks.Count} books created successfully."));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while bulk creating books.");
-
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred during bulk creation."));
             }
         }
@@ -176,14 +161,10 @@ namespace MiniLibraryMgmtSys.Controllers
                     return NotFound(ApiResponse<object>.Failure("Book not found."));
                 }
 
-                _logger.LogInformation("Book updated successfully with ID: {BookId}", id);
-
                 return Ok(ApiResponse<object>.Success(true, "Book updated successfully."));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while updating the book with ID: {BookId}", id);
-
                 return StatusCode(500, ApiResponse<object>.Failure($"An error occurred while updating the book: {ex.Message}"));
             }
 
@@ -223,14 +204,10 @@ namespace MiniLibraryMgmtSys.Controllers
                     return NotFound(ApiResponse<object>.Failure("Book not found."));
                 }
 
-                _logger.LogInformation("Book deleted successfully with ID: {BookId}", id);
-
                 return Ok(ApiResponse<object>.Success(true, "Book deleted successfully."));
             }
             catch (Exception ex)
             {
-
-                _logger.LogError(ex, "Error occurred while deleting the book with ID: {BookId}", id);
 
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred while deleting the book."));
             }

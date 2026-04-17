@@ -4,11 +4,11 @@ namespace MiniLibraryMgmtSys.DTO
 {
     public class BookDto
     {
-        public string? Id { get; set; } = null!;
+        public string Id { get; set; } = string.Empty;
         [Required]
-        public string Author { get; set; } = null!;
+        public string Author { get; set; } = string.Empty;
         [Required]
-        public string Title { get; set; } = null!;
+        public string Title { get; set; } = string.Empty;
         public string? Genre { get; set; }
         public bool IsAvailable { get; set; }
         public bool DeleteFlag { get; set; }
@@ -20,9 +20,9 @@ namespace MiniLibraryMgmtSys.DTO
 
     public class CreateBookDto
     {
-        public string Author { get; set; } = null!;
-        public string Title { get; set; } = null!;
-        public string Genre { get; set; } = null!;
+        public string Author { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Genre { get; set; } = string.Empty;
     }
 
     public class UpdateBookDto

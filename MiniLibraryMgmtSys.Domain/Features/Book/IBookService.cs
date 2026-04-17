@@ -1,6 +1,6 @@
 ﻿using MiniLibraryMgmtSys.DTO;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.Book
 {
     public interface IBookService
     {

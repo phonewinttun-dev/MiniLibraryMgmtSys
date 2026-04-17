@@ -37,15 +37,16 @@ namespace MiniLibraryMgmtSys.Services
         //         .ToListAsync();
         // }
 
-        public async Task<BookDto?> GetBookByIdAsync(string id)
+        public async Task<ApiResponse<BookDto>> GetBookByIdAsync(string id)
         {
             var book = await ActiveBooks
-            .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == id);
 
-            if (book == null) return null;
+            if (book == null)
+                return ApiResponse<BookDto>.Failure("Book not found.");
 
-            return new BookDto
+            var bookDto = new BookDto
             {
                 Id = book.Id,
                 Author = book.Author,
@@ -57,6 +58,8 @@ namespace MiniLibraryMgmtSys.Services
                 UpdatedAt = book.UpdatedAt,
                 UpdatedBy = book.UpdatedBy
             };
+
+            return ApiResponse<BookDto>.Success(bookDto);
         }
 
         // get all active books

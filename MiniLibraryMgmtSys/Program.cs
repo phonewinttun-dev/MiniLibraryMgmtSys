@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using MiniLibraryMgmtSys.Database.AppDbContextModels;
-using MiniLibraryMgmtSys.Infrastructure;
-using MiniLibraryMgmtSys.Services;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using System.Text;
 using Scalar.AspNetCore;
+using MiniLibraryMgmtSys.Domain;
 
 try {
     var builder = WebApplication.CreateBuilder(args);
@@ -30,17 +28,9 @@ try {
     // Add services to the container.
 
     builder.Services.AddControllers();
-    //Book Service Registration
-    builder.Services.AddScoped<IBookService, BookService>();
-    //User Service Registration
-    builder.Services.AddScoped<IUserService, UserService>();
-    //Borrow Service Registration
-    builder.Services.AddScoped<IBorrowService, BorrowService>();
-    //Dashboard Service Registration
-    builder.Services.AddScoped<IDashboardService, DashboardService>();
-    //JWT Tokens Registration
-    builder.Services.AddScoped<IJwtTokenService, GenerateJwtToken>();
 
+    // Add Dependency Injection
+    builder.AddDomain();
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
@@ -66,11 +56,6 @@ try {
 
     builder.Services.AddAuthorization();
 
-    builder.Services.AddDbContext<AppDbContext>(options =>
-    {
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DbConnection"));
-    });
-
     // Middleware configuration
     var app = builder.Build();
 
@@ -78,9 +63,9 @@ try {
     app.UseAuthentication();    // JWT authentication
     app.UseAuthorization();     // User permissions
 
-    app.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}");
+    //app.MapControllerRoute(
+    //    name: "default",
+    //    pattern: "{controller=Home}/{action=Index}/{id?}");
 
     // Configure the HTTP request pipeline.
     //if (app.Environment.IsDevelopment())

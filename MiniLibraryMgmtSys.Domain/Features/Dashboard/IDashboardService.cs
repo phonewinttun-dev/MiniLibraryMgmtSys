@@ -1,7 +1,7 @@
 using MiniLibraryMgmtSys.DTO;
 using System.Threading.Tasks;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.Dashboard
 {
     public interface IDashboardService
     {

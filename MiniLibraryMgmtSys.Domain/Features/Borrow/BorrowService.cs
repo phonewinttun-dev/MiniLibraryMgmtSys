@@ -18,22 +18,22 @@ namespace MiniLibraryMgmtSys.Services
             _db = db;
         }
 
-        public async Task<BorrowResponseDto?> BorrowBookAsync(string userId, string bookId)
+        public async Task<ApiResponse<BorrowResponseDto>> BorrowBookAsync(string userId, string bookId)
         {
             var book = await _db.TblBooks.FirstOrDefaultAsync(b => b.Id == bookId && !b.DeleteFlag);
             if (book == null || !book.IsAvailable)
-                return null;
+                return ApiResponse<BorrowResponseDto>.Failure("Book is not available.");
 
             var user = await _db.TblUsers.FirstOrDefaultAsync(u => u.Id == userId && !u.DeleteFlag);
             if (user == null)
-                return null;
+                return ApiResponse<BorrowResponseDto>.Failure("User not found.");
 
             // Prevent double borrow of the same book by the same user if not returned
             var existingBorrow = await _db.TblBorrowedBooks
                 .AnyAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.ReturnedAt == null);
 
             if (existingBorrow)
-                return null;
+                return ApiResponse<BorrowResponseDto>.Failure("Book is already borrowed.");
 
             var borrowRecord = new TblBorrowedBook
             {
@@ -52,7 +52,9 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblBorrowedBooks.Add(borrowRecord);
             await _db.SaveChangesAsync();
 
-            return MapToDto(borrowRecord, book, user);
+            var response = MapToDto(borrowRecord, book, user);
+
+            return ApiResponse<BorrowResponseDto>.Success(response);
         }
 
         public async Task<bool> ReturnBookAsync(string userId, string bookId)

@@ -1,6 +1,6 @@
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 
-namespace MiniLibraryMgmtSys.Infrastructure
+namespace MiniLibraryMgmtSys.Domain.Features.Auth
 {
     public interface IJwtTokenService
     {

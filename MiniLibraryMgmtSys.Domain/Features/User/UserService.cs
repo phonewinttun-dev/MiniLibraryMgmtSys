@@ -4,7 +4,7 @@ using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
 using System.Text.RegularExpressions;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.User
 {
     public class UserService : IUserService
     {
@@ -24,15 +24,15 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblUsers
             .Where(u => !u.DeleteFlag);
 
-        private async Task<bool> EmailExistsAsync(string email)
+        public async Task<bool> EmailExistsAsync(string email)
         {
             email = email.Trim().ToLower();
             return await _db.TblUsers.AnyAsync(u => u.Email == email && !u.DeleteFlag);
         }
 
-        public async Task<List<UserResponseDTO>> GetAllAsync()
+        public async Task<ApiResponse<List<UserResponseDTO>>> GetAllAsync()
         {
-            return await ExistingUser
+            var users = await ExistingUser
                 .OrderByDescending(u => u.CreatedAt)
                 .Select(u => new UserResponseDTO
                 {
@@ -45,26 +45,32 @@ namespace MiniLibraryMgmtSys.Services
                     UpdatedBy = u.UpdatedBy
                 })
                 .ToListAsync();
+
+            return ApiResponse<List<UserResponseDTO>>.Success(users);
         }
 
-        public async Task<UserResponseDTO?> GetByIdAsync(string id)
+        public async Task<ApiResponse<UserResponseDTO>> GetByIdAsync(string id)
         {
-            return await ExistingUser
-                .Where(u => u.Id == id)
-                .Select(u => new UserResponseDTO
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.Email,
-                    Role = u.Role,
-                    CreatedAt = u.CreatedAt,
-                    UpdatedAt = u.UpdatedAt,
-                    UpdatedBy = u.UpdatedBy
-                })
-                .FirstOrDefaultAsync();
+            var user = await ActiveUser.FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+                return ApiResponse<UserResponseDTO>.Failure("User not found.");
+
+            var userDto = new UserResponseDTO
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                Role = user.Role,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                UpdatedBy = user.UpdatedBy
+            };
+
+            return ApiResponse<UserResponseDTO>.Success(userDto);
         }
 
-        private async Task<TblUser?> InternalCreateAsync(string name, string email, string password, string role)
+        public async Task<TblUser?> InternalCreateAsync(string name, string email, string password, string role)
         {
             email = email.Trim().ToLower();
 
@@ -74,7 +80,7 @@ namespace MiniLibraryMgmtSys.Services
             if (!EmailRegex.IsMatch(email))
                 return null;
 
-            
+
             var assignedRole = UserRoles.All.Contains(role, StringComparer.OrdinalIgnoreCase)
                 ? role
                 : UserRoles.Member;

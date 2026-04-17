@@ -1,0 +1,111 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using MiniLibraryMgmtSys.Domain.Features.User;
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MiniLibraryMgmtSys.Domain.Middleware
+{
+
+    public class Middleware
+    {
+        private readonly RequestDelegate _next;
+        private readonly IConfiguration _configuration;
+
+        public Middleware(RequestDelegate next, IConfiguration configuration)
+        {
+            _next = next;
+            _configuration = configuration;
+        }
+
+        public async Task InvokeAsync(HttpContext context)
+        {
+            var path = context.Request.Path.Value?.ToLower();
+
+            if (path != null && (path.Contains("/api/auth/login") || path.Contains("/api/auth/register")))
+            {
+                await _next(context);
+                return;
+            }
+
+            var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+            var token = authHeader?.Split(" ").Last();
+            bool isTokenValid = false;
+
+            if (!string.IsNullOrEmpty(token))
+            {
+                isTokenValid = ValidateToken(token, context);
+            }
+            if (!isTokenValid)
+            {
+                var refreshToken = context.Request.Cookies["refreshToken"];
+                if (!string.IsNullOrEmpty(refreshToken))
+                {
+                    try
+                    {
+                        var authService = context.RequestServices.GetRequiredService<IUserService>();
+                        var result = await authService.RefreshTokenAsync(refreshToken);
+
+                        if (result != null)
+                        {
+                            ValidateToken(result.AccessToken, context);
+
+                            context.Response.Headers.Append("X-Access-Token", result.AccessToken);
+
+                            var cookieOptions = new CookieOptions
+                            {
+                                HttpOnly = true,
+                                Secure = true,
+                                SameSite = SameSiteMode.Strict,
+                                Expires = DateTime.UtcNow.AddDays(7)
+                            };
+                            context.Response.Cookies.Append("refreshToken", result.RefreshToken, cookieOptions);
+                        }
+                    }
+                    catch
+                    {
+                        // Refresh failed or service unavailable - continue unauthenticated
+                    }
+                }
+            }
+
+            await _next(context);
+        }
+
+        private bool ValidateToken(string token, HttpContext context)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtSettings = _configuration.GetSection("JwtSettings");
+                var secretKey = jwtSettings["SecretKey"] ?? "default_secret_key_at_least_32_chars_long";
+                var key = Encoding.UTF8.GetBytes(secretKey);
+
+                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = jwtSettings["Audience"],
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                }, out SecurityToken validatedToken);
+
+                context.User = principal;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+}

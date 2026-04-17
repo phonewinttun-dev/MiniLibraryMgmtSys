@@ -2,7 +2,7 @@ using MiniLibraryMgmtSys.DTO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.Borrow
 {
     public interface IBorrowService
     {

@@ -1,12 +1,15 @@
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTOs;
+using MiniLibraryMgmtSys.Infrastructure;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.User
 {
     public interface IUserService
     {
-        Task<List<UserResponseDTO>> GetAllAsync();
-        Task<UserResponseDTO?> GetByIdAsync(string id);
+        Task<bool> EmailExistsAsync(string email);
+        Task<ApiResponse<List<UserResponseDTO>>> GetAllAsync();
+        Task<ApiResponse<UserResponseDTO>> GetByIdAsync(string id);
+        Task<TblUser?> InternalCreateAsync(string name, string email, string password, string role);
         Task<UserResponseDTO?> CreateAsync(CreateUserDTO dto);
         Task<string?> RegisterAsync(RegisterDTO dto);
         Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null);

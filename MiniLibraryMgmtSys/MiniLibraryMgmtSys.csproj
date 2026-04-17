@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiniLibraryMgmtSys.Database\MiniLibraryMgmtSys.Database.csproj" />
+    <ProjectReference Include="..\MiniLibraryMgmtSys.Domain\MiniLibraryMgmtSys.Domain.csproj" />
   </ItemGroup>
 
 </Project>

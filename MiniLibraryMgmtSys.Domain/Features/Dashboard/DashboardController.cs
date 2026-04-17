@@ -2,11 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Infrastructure;
-using MiniLibraryMgmtSys.Services;
 using System;
 using System.Threading.Tasks;
 
-namespace MiniLibraryMgmtSys.Controllers
+namespace MiniLibraryMgmtSys.Domain.Features.Dashboard
 {
     [Authorize(Roles = "Admin, Librarian")]
     [ApiController]

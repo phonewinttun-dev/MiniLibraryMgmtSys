@@ -1,16 +1,17 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace MiniLibraryMgmtSys.Infrastructure
+namespace MiniLibraryMgmtSys.Domain.Features.Auth
 {
-    public class GenerateJwtToken : IJwtTokenService
+    public class JwtTokenService : IJwtTokenService
     {
         private readonly IConfiguration _configuration;
 
-        public GenerateJwtToken(IConfiguration configuration)
+        public JwtTokenService(IConfiguration configuration)
         {
             _configuration = configuration;
         }
