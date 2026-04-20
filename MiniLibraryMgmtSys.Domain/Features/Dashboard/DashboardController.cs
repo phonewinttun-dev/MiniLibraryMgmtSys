@@ -24,8 +24,8 @@ namespace MiniLibraryMgmtSys.Domain.Features.Dashboard
         {
             try
             {
-                var summary = await _dashboardService.GetDashboardSummaryAsync();
-                return Ok(ApiResponse<DashboardSummaryDto>.Success(summary, "Dashboard summary retrieved successfully."));
+                var response = await _dashboardService.GetDashboardSummaryAsync();
+                return response.IsSuccess ? Ok(response) : BadRequest(response);
             }
             catch (Exception ex)
             {

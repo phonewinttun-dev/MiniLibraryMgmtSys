@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using MiniLibraryMgmtSys.Domain.Features.User;
 using MiniLibraryMgmtSys.DTOs;
 using MiniLibraryMgmtSys.Infrastructure;
-using MiniLibraryMgmtSys.Services;
 using System.Security.Claims;
 
 namespace MiniLibraryMgmtSys.Controllers
@@ -26,15 +25,14 @@ namespace MiniLibraryMgmtSys.Controllers
         {
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
 
-            var users = await _userService.GetAllAsync();
+            var response = await _userService.GetAllAsync();
 
-            // Access control: Librarian can only see Members
-            if (currentUserRole == "Librarian")
+            if (response.IsSuccess && currentUserRole == "Librarian")
             {
-                users = users.Where(u => u.Role == "Member").ToList();
+                response.Data = response.Data?.Where(u => u.Role == "Member").ToList();
             }
 
-            return Ok(ApiResponse<List<UserResponseDTO>>.Success(users, "Users retrieved successfully."));
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
 
         [HttpGet("{id}")]
@@ -46,18 +44,18 @@ namespace MiniLibraryMgmtSys.Controllers
 
             var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
 
-            var user = await _userService.GetByIdAsync(id);
+            var response = await _userService.GetByIdAsync(id);
 
-            if (user == null)
-                return NotFound(ApiResponse<object>.Failure("User not found."));
+            if (!response.IsSuccess)
+                return NotFound(response);
 
             // Access control: Librarian can only see Members
-            if (currentUserRole == "Librarian" && user.Role != "Member")
+            if (currentUserRole == "Librarian" && response.Data?.Role != "Member")
             {
                 return Forbid();
             }
 
-            return Ok(ApiResponse<UserResponseDTO>.Success(user, "User retrieved successfully."));
+            return Ok(response);
         }
 
         [HttpGet("profile")]
@@ -67,10 +65,10 @@ namespace MiniLibraryMgmtSys.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var user = await _userService.GetByIdAsync(userId);
-            if (user == null) return NotFound(ApiResponse<object>.Failure("Profile not found."));
+            var response = await _userService.GetByIdAsync(userId);
+            if (!response.IsSuccess) return NotFound(response);
 
-            return Ok(ApiResponse<UserResponseDTO>.Success(user, "Profile retrieved successfully."));
+            return Ok(response);
         }
 
         [HttpPut("profile")]
@@ -82,14 +80,14 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                var success = await _userService.UpdateAsync(userId, dto, userId);
+                var response = await _userService.UpdateAsync(userId, dto, userId);
 
-                if (!success)
-                    return BadRequest(ApiResponse<object>.Failure("Failed to update profile."));
+                if (!response.IsSuccess)
+                    return BadRequest(response);
 
-                return Ok(ApiResponse<bool>.Success(true, "Profile updated successfully."));
+                return Ok(response);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
@@ -104,15 +102,14 @@ namespace MiniLibraryMgmtSys.Controllers
 
             try
             {
-                var user = await _userService.CreateAsync(dto);
+                var response = await _userService.CreateAsync(dto);
 
-                if (user == null)
-                    return Conflict(ApiResponse<object>.Failure("Failed to create user. Email might already exist."));
+                if (!response.IsSuccess)
+                    return Conflict(response);
 
-                return CreatedAtAction(nameof(GetById), new { id = user.Id },
-                    ApiResponse<UserResponseDTO>.Success(user, "User created successfully."));
+                return CreatedAtAction(nameof(GetById), new { id = response.Data?.Id }, response);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
@@ -128,14 +125,14 @@ namespace MiniLibraryMgmtSys.Controllers
             try
             {
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
-                var success = await _userService.UpdateAsync(id, dto, currentUserId);
+                var response = await _userService.UpdateAsync(id, dto, currentUserId);
 
-                if (!success)
-                    return NotFound(ApiResponse<object>.Failure("User not found or update failed."));
+                if (!response.IsSuccess)
+                    return NotFound(response);
 
-                return Ok(ApiResponse<bool>.Success(true, "User updated successfully."));
+                return Ok(response);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
@@ -151,14 +148,14 @@ namespace MiniLibraryMgmtSys.Controllers
             try
             {
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Unknown";
-                var success = await _userService.SoftDeleteAsync(id, currentUserId);
+                var response = await _userService.SoftDeleteAsync(id, currentUserId);
 
-                if (!success)
-                    return NotFound(ApiResponse<object>.Failure("User not found."));
+                if (!response.IsSuccess)
+                    return NotFound(response);
 
-                return Ok(ApiResponse<object>.Success(true, "User deleted successfully."));
+                return Ok(response);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }

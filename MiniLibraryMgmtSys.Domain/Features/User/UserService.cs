@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTOs;
@@ -9,8 +10,6 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
     public class UserService : IUserService
     {
         private readonly AppDbContext _db;
-        private static readonly Regex EmailRegex = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
         public UserService(AppDbContext db)
         {
             _db = db;
@@ -30,6 +29,27 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
             return await _db.TblUsers.AnyAsync(u => u.Email == email && !u.DeleteFlag);
         }
 
+        #region email validation
+        public bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            try
+            {
+                return Regex.IsMatch(email,
+                    @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+                    RegexOptions.IgnoreCase,
+                    TimeSpan.FromMilliseconds(250));
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                return false;
+            }
+        }
+        #endregion
+
+        #region get all users
         public async Task<ApiResponse<List<UserResponseDTO>>> GetAllAsync()
         {
             var users = await ExistingUser
@@ -48,7 +68,9 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
 
             return ApiResponse<List<UserResponseDTO>>.Success(users);
         }
+        #endregion
 
+        #region get user by id
         public async Task<ApiResponse<UserResponseDTO>> GetByIdAsync(string id)
         {
             var user = await ActiveUser.FirstOrDefaultAsync(u => u.Id == id);
@@ -69,74 +91,56 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
 
             return ApiResponse<UserResponseDTO>.Success(userDto);
         }
+        #endregion
 
-        public async Task<TblUser?> InternalCreateAsync(string name, string email, string password, string role)
+        #region create user
+        public async Task<ApiResponse<UserResponseDTO>> CreateAsync(CreateUserDTO request)
         {
-            email = email.Trim().ToLower();
+            if (!IsValidEmail(request.Email)) return ApiResponse<UserResponseDTO>.Failure("Invalid email format.");
 
-            if (await EmailExistsAsync(email))
-                return null;
+            var existingUser = await _db.TblUsers
+                .AnyAsync(u => u.Email == request.Email && !u.DeleteFlag);
 
-            if (!EmailRegex.IsMatch(email))
-                return null;
-
-
-            var assignedRole = UserRoles.All.Contains(role, StringComparer.OrdinalIgnoreCase)
-                ? role
-                : UserRoles.Member;
-
-            var user = new TblUser
+            if (existingUser)
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = name.Trim(),
-                Email = email,
-                Password = PasswordHasher.Hash(password),
-                Role = assignedRole,
+                return ApiResponse<UserResponseDTO>.Failure("User with this email already exists.");
+            }
+
+            string hashedPassword = PasswordHasher.Hash(request.Password);
+
+            var newUser = new TblUser
+            {
+                Name = request.Name.Trim(),
+                Email = request.Email.Trim(),
+                Password = hashedPassword,
+                Role = request.Role,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
                 IsActive = true,
                 DeleteFlag = false
             };
 
-            _db.TblUsers.Add(user);
-            await _db.SaveChangesAsync();
-
-            return user;
-        }
-
-        public async Task<UserResponseDTO?> CreateAsync(CreateUserDTO dto)
-        {
-            var user = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role);
-            if (user == null) return null;
-
-            return new UserResponseDTO
+            try
             {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                UpdatedBy = user.UpdatedBy
-            };
+                _db.TblUsers.Add(newUser);
+                await _db.SaveChangesAsync();
+
+                return ApiResponse<UserResponseDTO>.Success(new UserResponseDTO { Id = newUser.Id }, "User created successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<UserResponseDTO>.Failure($"An error occurred during creation: {ex.Message}");
+            }
         }
+        #endregion
 
-        public async Task<string?> RegisterAsync(RegisterDTO dto)
-        {
-            var user = await InternalCreateAsync(dto.Name, dto.Email, dto.Password, dto.Role ?? UserRoles.Member);
-            if (user == null) return null;
-
-            return user.Id;
-        }
-
-
-        public async Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
+        #region update user profile
+        public async Task<ApiResponse<bool>> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null)
         {
             var user = await ActiveUser
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
-                return false;
+                return ApiResponse<bool>.Failure("User not found.");
 
             if (!string.IsNullOrWhiteSpace(dto.Name))
                 user.Name = dto.Name.Trim();
@@ -145,7 +149,7 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
             {
                 var newEmail = dto.Email.Trim().ToLower();
                 if (newEmail != user.Email.ToLower() && await EmailExistsAsync(newEmail))
-                    return false;
+                    return ApiResponse<bool>.Failure("Email already exists.");
 
                 user.Email = newEmail;
             }
@@ -157,41 +161,27 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
             user.UpdatedBy = updatedBy;
 
             await _db.SaveChangesAsync();
-            return true;
+            return ApiResponse<bool>.Success(true, "User updated successfully.");
         }
+        #endregion
 
-        public async Task<bool> SoftDeleteAsync(string id, string? updatedBy = null)
+        #region soft delete user
+        public async Task<ApiResponse<bool>> SoftDeleteAsync(string id, string? updatedBy = null)
         {
             var user = await ActiveUser
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
-                return false;
+                return ApiResponse<bool>.Failure("User not found.");
 
             user.DeleteFlag = true;
             user.UpdatedAt = DateTime.UtcNow;
             user.UpdatedBy = updatedBy;
 
             await _db.SaveChangesAsync();
-            return true;
+            return ApiResponse<bool>.Success(true, "User deleted successfully.");
         }
-
-        public async Task<TblUser?> ValidateUserAsync(string email, string password)
-        {
-            email = email.Trim().ToLower();
-
-            var user = await ActiveUser
-                .FirstOrDefaultAsync(u =>
-                    u.Email == email &&
-                    u.IsActive);
-
-            if (user == null)
-                return null;
-
-            if (!PasswordHasher.Verify(password, user.Password))
-                return null;
-
-            return user;
-        }
+        #endregion
+   
     }
 }

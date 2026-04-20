@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
+using MiniLibraryMgmtSys.Domain.Features.Book;
+using MiniLibraryMgmtSys.Infrastructure;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.Book
 {
     public class BookService : IBookService
     {
@@ -63,9 +65,9 @@ namespace MiniLibraryMgmtSys.Services
         }
 
         // get all active books
-        public async Task<List<BookDto>> GetBooksAsync()
+        public async Task<ApiResponse<List<BookDto>>> GetBooksAsync()
         {
-            return await ActiveBooks
+            var books = await ActiveBooks
                 .AsNoTracking()
                 .Select(b => new BookDto
                 {
@@ -80,11 +82,13 @@ namespace MiniLibraryMgmtSys.Services
                     UpdatedBy = b.UpdatedBy
                 })
                 .ToListAsync();
+
+            return ApiResponse<List<BookDto>>.Success(books);
         }
 
-        public async Task<List<BookDto>> GetAvailableBooksAsync()
+        public async Task<ApiResponse<List<BookDto>>> GetAvailableBooksAsync()
         {
-            return await AvailableBooks
+            var books = await AvailableBooks
                 .AsNoTracking()
                 .Select(b => new BookDto
                 {
@@ -99,9 +103,11 @@ namespace MiniLibraryMgmtSys.Services
                     UpdatedBy = b.UpdatedBy
                 })
                 .ToListAsync();
+
+            return ApiResponse<List<BookDto>>.Success(books);
         }
 
-        public async Task<List<BookDto>> SearchBooksAsync(SearchBookDto search)
+        public async Task<ApiResponse<List<BookDto>>> SearchBooksAsync(SearchBookDto search)
         {
             var query = ActiveBooks.AsQueryable();
 
@@ -115,7 +121,7 @@ namespace MiniLibraryMgmtSys.Services
                 query = query.Where(b => EF.Functions.Like(b.Genre, $"%{search.Genre}%"));
 
 
-            return await query
+            var books = await query
                 .AsNoTracking()
                 .Select(b => new BookDto
                 {
@@ -130,9 +136,11 @@ namespace MiniLibraryMgmtSys.Services
                     UpdatedBy = b.UpdatedBy
                 })
                 .ToListAsync();
+
+            return ApiResponse<List<BookDto>>.Success(books);
         }
 
-        public async Task<BookDto?> CreateBookAsync(CreateBookDto dto, string user)
+        public async Task<ApiResponse<BookDto>> CreateBookAsync(CreateBookDto dto, string user)
         {
             var book = new TblBook
             {
@@ -150,7 +158,7 @@ namespace MiniLibraryMgmtSys.Services
 
             await _db.SaveChangesAsync();
 
-            return new BookDto
+            var bookDto = new BookDto
             {
                 Id = book.Id,
                 Author = book.Author,
@@ -162,9 +170,11 @@ namespace MiniLibraryMgmtSys.Services
                 UpdatedAt = book.UpdatedAt,
                 UpdatedBy = book.UpdatedBy
             };
+
+            return ApiResponse<BookDto>.Success(bookDto, "Book created successfully.");
         }
 
-        public async Task<List<BookDto>> BulkCreateBooksAsync(List<CreateBookDto> dtos, string user)
+        public async Task<ApiResponse<List<BookDto>>> BulkCreateBooksAsync(List<CreateBookDto> dtos, string user)
         {
             var books = dtos.Select(dto => new TblBook
             {
@@ -181,7 +191,7 @@ namespace MiniLibraryMgmtSys.Services
             _db.TblBooks.AddRange(books);
             await _db.SaveChangesAsync();
 
-            return books.Select(b => new BookDto
+            var result = books.Select(b => new BookDto
             {
                 Id = b.Id,
                 Author = b.Author,
@@ -193,12 +203,14 @@ namespace MiniLibraryMgmtSys.Services
                 UpdatedAt = b.UpdatedAt,
                 UpdatedBy = b.UpdatedBy
             }).ToList();
+
+            return ApiResponse<List<BookDto>>.Success(result, "Books bulk created successfully.");
         }
 
-        public async Task<bool> UpdateBookAsync(string id, UpdateBookDto dto, string user)
+        public async Task<ApiResponse<bool>> UpdateBookAsync(string id, UpdateBookDto dto, string user)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);
-            if (book == null) return false;
+            if (book == null) return ApiResponse<bool>.Failure("Book not found.");
 
             if (!string.IsNullOrEmpty(dto.Author)) book.Author = dto.Author;
             if (!string.IsNullOrEmpty(dto.Title)) book.Title = dto.Title;
@@ -206,47 +218,51 @@ namespace MiniLibraryMgmtSys.Services
 
             book.UpdatedAt = DateTime.UtcNow;
             book.UpdatedBy = user;
-            return await _db.SaveChangesAsync() > 0;
+            await _db.SaveChangesAsync();
+            return ApiResponse<bool>.Success(true, "Book updated successfully.");
         }
 
-        public async Task<bool> DeleteBookAsync(string id, string user)
+        public async Task<ApiResponse<bool>> DeleteBookAsync(string id, string user)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);
-            if (book == null) return false;
+            if (book == null) return ApiResponse<bool>.Failure("Book not found.");
 
             book.DeleteFlag = true;
             book.IsAvailable = false;
             book.UpdatedAt = DateTime.UtcNow;
             book.UpdatedBy = user;
 
-            return await _db.SaveChangesAsync() > 0;
+            await _db.SaveChangesAsync();
+            return ApiResponse<bool>.Success(true, "Book deleted successfully.");
         }
 
         // admin restore deleted books
-        public async Task<bool> RestoreBookAsync(string id, string user)
+        public async Task<ApiResponse<bool>> RestoreBookAsync(string id, string user)
         {
             var book = await _db.TblBooks.FirstOrDefaultAsync(b => b.Id == id && b.DeleteFlag);
-            if (book == null) return false;
+            if (book == null) return ApiResponse<bool>.Failure("Deleted book not found.");
 
             book.DeleteFlag = false;
             book.IsAvailable = true;
             book.UpdatedAt = DateTime.UtcNow;
             book.UpdatedBy = user;
 
-            return await _db.SaveChangesAsync() > 0;
+            await _db.SaveChangesAsync();
+            return ApiResponse<bool>.Success(true, "Book restored successfully.");
         }
 
         // update book's avaialability status
-        public async Task<bool> UpdateStatusAsync(string id, bool isAvailable, string user)
+        public async Task<ApiResponse<bool>> UpdateStatusAsync(string id, bool isAvailable, string user)
         {
             var book = await ActiveBooks.FirstOrDefaultAsync(b => b.Id == id);
-            if (book == null) return false;
+            if (book == null) return ApiResponse<bool>.Failure("Book not found.");
 
             book.IsAvailable = isAvailable;
             book.UpdatedAt = DateTime.UtcNow;
             book.UpdatedBy = user;
 
-            return await _db.SaveChangesAsync() > 0;
+            await _db.SaveChangesAsync();
+            return ApiResponse<bool>.Success(true, "Book status updated successfully.");
         }
     }
 }

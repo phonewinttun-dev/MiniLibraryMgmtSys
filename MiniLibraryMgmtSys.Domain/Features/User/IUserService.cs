@@ -9,11 +9,8 @@ namespace MiniLibraryMgmtSys.Domain.Features.User
         Task<bool> EmailExistsAsync(string email);
         Task<ApiResponse<List<UserResponseDTO>>> GetAllAsync();
         Task<ApiResponse<UserResponseDTO>> GetByIdAsync(string id);
-        Task<TblUser?> InternalCreateAsync(string name, string email, string password, string role);
-        Task<UserResponseDTO?> CreateAsync(CreateUserDTO dto);
-        Task<string?> RegisterAsync(RegisterDTO dto);
-        Task<bool> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null);
-        Task<bool> SoftDeleteAsync(string id, string? updatedBy = null);
-        Task<TblUser?> ValidateUserAsync(string email, string password);
+        Task<ApiResponse<UserResponseDTO>> CreateAsync(CreateUserDTO dto);
+        Task<ApiResponse<bool>> UpdateAsync(string id, UpdateUserDTO dto, string? updatedBy = null);
+        Task<ApiResponse<bool>> SoftDeleteAsync(string id, string? updatedBy = null);
     }
 }

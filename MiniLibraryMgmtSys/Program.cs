@@ -6,6 +6,7 @@ using Serilog.Sinks.MSSqlServer;
 using System.Text;
 using Scalar.AspNetCore;
 using MiniLibraryMgmtSys.Domain;
+using Microsoft.OpenApi.Models;
 
 try {
     var builder = WebApplication.CreateBuilder(args);
@@ -34,7 +35,32 @@ try {
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter 'Bearer' [space] and then your valid token in the text input below.\r\n\r\nExample: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\""
+        });
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+    });
 
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -82,7 +108,6 @@ try {
 
     app.UseHttpsRedirection();
 
-    app.UseAuthorization();
 
     app.MapControllers();
 

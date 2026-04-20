@@ -11,15 +11,11 @@ namespace MiniLibraryMgmtSys.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IUserService _userService;
-        private readonly IJwtTokenService _jwtToken;
+        private readonly IAuthService _authService;
 
-        public AuthController(
-            IUserService userService,
-            IJwtTokenService jwtToken)
+        public AuthController(IAuthService authService)
         {
-            _userService = userService;
-            _jwtToken = jwtToken;
+            _authService = authService;
         }
 
         [AllowAnonymous]
@@ -27,32 +23,19 @@ namespace MiniLibraryMgmtSys.Controllers
         public async Task<IActionResult> Register(RegisterDTO dto)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid input data."
-                });
-            }
-
+                return BadRequest(ApiResponse<object>.Failure("Invalid input data."));
+            
             try
             {
-                var userId = await _userService.RegisterAsync(dto);
+                var response = await _authService.RegisterAsync(dto);
 
-                if (userId == null)
-                {
-                    return BadRequest(ApiResponse<object>.Failure("Registration failed. Email might already exist."));
-                }
-
-                return Ok(ApiResponse<object>.Success(new { userId }, "Registration successful"));
+                if (!response.IsSuccess) return BadRequest(response);
+                
+                return Ok(response);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "An unexpected error occurred."
-                });
+                return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
         }
 
@@ -61,44 +44,19 @@ namespace MiniLibraryMgmtSys.Controllers
         public async Task<IActionResult> Login(LoginDTO dto)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "Invalid input data."
-                });
-            }
+                return BadRequest(ApiResponse<object>.Failure("Invalid input data."));
 
             try
             {
-                var user = await _userService.ValidateUserAsync(dto.Email, dto.Password);
+                var response = await _authService.LoginAsync(dto);
 
-                if (user == null)
-                {
-                    return Unauthorized(ApiResponse<object>.Failure("Invalid credentials"));
-                }
+                if (!response.IsSuccess) return Unauthorized(response);
 
-                var token = _jwtToken.GenerateAccessToken(user);
-
-                return Ok(ApiResponse<object>.Success(new
-                {
-                    token,
-                    user = new
-                    {
-                        user.Id,
-                        user.Name,
-                        user.Email,
-                        user.Role
-                    }
-                }, "Login successful"));
+                return Ok(response);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    IsSuccess = false,
-                    Message = "An unexpected error occurred."
-                });
+                return StatusCode(500, ApiResponse<object>.Failure("An unexpected error occurred."));
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MiniLibraryMgmtSys.DTOs
 {
@@ -59,6 +59,13 @@ namespace MiniLibraryMgmtSys.DTOs
 
         [Required]
         public string Password { get; set; } = null!;
+    }
+
+    public class TokenResponse
+    {
+        public string AccessToken { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
     }
 
 

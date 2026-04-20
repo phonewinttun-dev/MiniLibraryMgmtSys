@@ -26,12 +26,9 @@ namespace MiniLibraryMgmtSys.Domain.Features.Borrow
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            var result = await _borrowService.BorrowBookAsync(userId, request.BookId);
+            var response = await _borrowService.BorrowBookAsync(userId, request.BookId);
 
-            if (result == null)
-                return BadRequest(ApiResponse<BorrowResponseDto>.Failure("Failed to borrow book."));
-
-            return Ok(ApiResponse<BorrowResponseDto>.Success(result, "Book borrowed successfully."));
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
 
         [HttpPost("return")]
@@ -40,12 +37,9 @@ namespace MiniLibraryMgmtSys.Domain.Features.Borrow
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var result = await _borrowService.ReturnBookAsync(userId, request.BookId);
+            var response = await _borrowService.ReturnBookAsync(userId, request.BookId);
 
-            if (!result)
-                return BadRequest(ApiResponse<bool>.Failure("Failed to return book."));
-
-            return Ok(ApiResponse<bool>.Success(true, "Book returned successfully."));
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
 
         [HttpGet("history")]
@@ -54,16 +48,16 @@ namespace MiniLibraryMgmtSys.Domain.Features.Borrow
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var result = await _borrowService.GetUserBorrowingHistoryAsync(userId);
-            return Ok(ApiResponse<List<BorrowResponseDto>>.Success(result, "Borrowing history retrieved successfully."));
+            var response = await _borrowService.GetUserBorrowingHistoryAsync(userId);
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
 
         [HttpGet("all-history")]
         [Authorize(Roles = "Admin, Librarian")]
         public async Task<IActionResult> GetAllHistory()
         {
-            var result = await _borrowService.GetAllBorrowingHistoryAsync();
-            return Ok(ApiResponse<List<BorrowResponseDto>>.Success(result, "All borrowing history retrieved successfully."));
+            var response = await _borrowService.GetAllBorrowingHistoryAsync();
+            return response.IsSuccess ? Ok(response) : BadRequest(response);
         }
     }
 }

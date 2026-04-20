@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
 using MiniLibraryMgmtSys.DTO;
+using MiniLibraryMgmtSys.Domain.Features.Borrow;
+using MiniLibraryMgmtSys.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MiniLibraryMgmtSys.Services
+namespace MiniLibraryMgmtSys.Domain.Features.Borrow
 {
     public class BorrowService : IBorrowService
     {
@@ -57,14 +59,14 @@ namespace MiniLibraryMgmtSys.Services
             return ApiResponse<BorrowResponseDto>.Success(response);
         }
 
-        public async Task<bool> ReturnBookAsync(string userId, string bookId)
+        public async Task<ApiResponse<bool>> ReturnBookAsync(string userId, string bookId)
         {
             var borrowRecord = await _db.TblBorrowedBooks
                 .Include(bb => bb.Book)
                 .FirstOrDefaultAsync(bb => bb.UserId == userId && bb.BookId == bookId && bb.ReturnedAt == null);
 
             if (borrowRecord == null)
-                return false;
+                return ApiResponse<bool>.Failure("Active borrow record not found.");
 
             borrowRecord.ReturnedAt = DateTime.UtcNow;
             borrowRecord.UpdatedAt = DateTime.UtcNow;
@@ -75,10 +77,10 @@ namespace MiniLibraryMgmtSys.Services
 
             await _db.SaveChangesAsync();
 
-            return true;
+            return ApiResponse<bool>.Success(true, "Book returned successfully.");
         }
 
-        public async Task<List<BorrowResponseDto>> GetUserBorrowingHistoryAsync(string userId)
+        public async Task<ApiResponse<List<BorrowResponseDto>>> GetUserBorrowingHistoryAsync(string userId)
         {
             var history = await _db.TblBorrowedBooks
                 .Include(bb => bb.Book)
@@ -88,10 +90,10 @@ namespace MiniLibraryMgmtSys.Services
                 .Select(bb => MapToDto(bb, bb.Book, bb.User))
                 .ToListAsync();
 
-            return history;
+            return ApiResponse<List<BorrowResponseDto>>.Success(history);
         }
 
-        public async Task<List<BorrowResponseDto>> GetAllBorrowingHistoryAsync()
+        public async Task<ApiResponse<List<BorrowResponseDto>>> GetAllBorrowingHistoryAsync()
         {
             var history = await _db.TblBorrowedBooks
                 .Include(bb => bb.Book)
@@ -100,7 +102,7 @@ namespace MiniLibraryMgmtSys.Services
                 .Select(bb => MapToDto(bb, bb.Book, bb.User))
                 .ToListAsync();
 
-            return history;
+            return ApiResponse<List<BorrowResponseDto>>.Success(history);
         }
 
         private static BorrowResponseDto MapToDto(TblBorrowedBook bb, TblBook book, TblUser user)

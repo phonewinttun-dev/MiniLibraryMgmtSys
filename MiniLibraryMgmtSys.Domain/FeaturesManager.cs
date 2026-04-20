@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +24,8 @@ namespace MiniLibraryMgmtSys.Domain
             builder.Services.AddScoped<IBookService, BookService>();
             //User Service Registration
             builder.Services.AddScoped<IUserService, UserService>();
+            //Auth Service Registration
+            builder.Services.AddScoped<IAuthService, AuthService>();
             //Borrow Service Registration
             builder.Services.AddScoped<IBorrowService, BorrowService>();
             //Dashboard Service Registration
