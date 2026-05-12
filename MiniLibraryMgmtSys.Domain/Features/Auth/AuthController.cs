@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MiniLibraryMgmtSys.Domain.Features.Auth;
+using MiniLibraryMgmtSys.Domain.DTOs;
 using MiniLibraryMgmtSys.Domain.Features.User;
-using MiniLibraryMgmtSys.DTOs;
-using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Shared;
 
-namespace MiniLibraryMgmtSys.Controllers
+namespace MiniLibraryMgmtSys.Domain.Features.Auth
 {
     [ApiController]
     [Route("api/auth")]

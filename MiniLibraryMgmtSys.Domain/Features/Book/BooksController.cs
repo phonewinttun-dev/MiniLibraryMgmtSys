@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MiniLibraryMgmtSys.DTO;
-using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 using System.Security.Claims;
 
 

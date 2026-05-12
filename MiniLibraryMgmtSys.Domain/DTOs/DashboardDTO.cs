@@ -1,4 +1,4 @@
-namespace MiniLibraryMgmtSys.DTO
+namespace MiniLibraryMgmtSys.Domain.DTOs
 {
     public class DashboardSummaryDto
     {

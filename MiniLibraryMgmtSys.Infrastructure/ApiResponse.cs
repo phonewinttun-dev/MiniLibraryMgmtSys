@@ -1,4 +1,4 @@
-﻿namespace MiniLibraryMgmtSys.Infrastructure
+﻿namespace MiniLibraryMgmtSys.Shared
 {
     public class ApiResponse<T>
     {

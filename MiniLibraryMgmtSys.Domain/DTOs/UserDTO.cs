@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MiniLibraryMgmtSys.DTOs
+namespace MiniLibraryMgmtSys.Domain.DTOs
 {
     public class UserResponseDTO
     {

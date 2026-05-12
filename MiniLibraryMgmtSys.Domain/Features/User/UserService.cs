@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
-using MiniLibraryMgmtSys.DTOs;
-using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 using System.Text.RegularExpressions;
 
 namespace MiniLibraryMgmtSys.Domain.Features.User

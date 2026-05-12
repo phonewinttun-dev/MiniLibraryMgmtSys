@@ -1,6 +1,6 @@
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
-using MiniLibraryMgmtSys.DTOs;
-using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 
 namespace MiniLibraryMgmtSys.Domain.Features.User
 {

@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
-using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Domain.Features.Borrow;
-using MiniLibraryMgmtSys.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 
 namespace MiniLibraryMgmtSys.Domain.Features.Borrow
 {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MiniLibraryMgmtSys.DTO
+namespace MiniLibraryMgmtSys.Domain.DTOs
 {
     public class BorrowRequestDto
     {

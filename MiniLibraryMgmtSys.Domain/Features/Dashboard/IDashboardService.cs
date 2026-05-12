@@ -1,6 +1,6 @@
-using MiniLibraryMgmtSys.Infrastructure;
-using MiniLibraryMgmtSys.DTO;
 using System.Threading.Tasks;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 
 namespace MiniLibraryMgmtSys.Domain.Features.Dashboard
 {

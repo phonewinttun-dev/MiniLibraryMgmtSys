@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using MiniLibraryMgmtSys.Database.AppDbContextModels;
-using MiniLibraryMgmtSys.DTO;
 using MiniLibraryMgmtSys.Domain.Features.Book;
-using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 
 namespace MiniLibraryMgmtSys.Domain.Features.Book
 {

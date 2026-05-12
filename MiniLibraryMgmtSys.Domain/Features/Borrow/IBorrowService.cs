@@ -1,5 +1,5 @@
-using MiniLibraryMgmtSys.DTO;
-using MiniLibraryMgmtSys.Infrastructure;
+using MiniLibraryMgmtSys.Domain.DTOs;
+using MiniLibraryMgmtSys.Shared;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

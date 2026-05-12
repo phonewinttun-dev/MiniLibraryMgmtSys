@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MiniLibraryMgmtSys.DTO
+namespace MiniLibraryMgmtSys.Domain.DTOs
 {
     public class BookDto
     {
