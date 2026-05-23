@@ -23,13 +23,13 @@ namespace MiniLibraryMgmtSys.Domain.Features.Auth
         {
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<object>.Failure("Invalid input data."));
-            
+
             try
             {
                 var response = await _authService.RegisterAsync(dto);
 
                 if (!response.IsSuccess) return BadRequest(response);
-                
+
                 return Ok(response);
             }
             catch (Exception)

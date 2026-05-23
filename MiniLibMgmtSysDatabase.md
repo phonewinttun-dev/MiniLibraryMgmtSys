@@ -1,8 +1,6 @@
 EFcore database scaffold script
 
-```sh
-dotnet ef dbcontext scaffold "Server=.;Database=MiniLibraryMgmtSys;User ID=sa;Password=sasa@123;TrustServerCertificate=True;" Microsoft.EntityFrameworkCore.SqlServer -o AppDbContextModels -c AppDbContext -f
-```
+dotnet ef dbcontext scaffold "Server=.;Database=MiniLibraryMgmtSys;User ID=sa;Password=sasa@123;TrustServerCertificate=True;" Microsoft.EntityFrameworkCore.SqlServer -o AppDbContextModels -c AppDbContext -f --no-onconfiguring
 
 
 Mini Lib Mgmt Sys Database Table Creation Script
@@ -17,6 +15,9 @@ CREATE TABLE [dbo].[tbl_users] (
     [Name] NVARCHAR(100) NOT NULL,
     [Email] VARCHAR(100) NOT NULL UNIQUE,
     [Password] NVARCHAR(255) NOT NULL,
+    [Role] VARCHAR(50) NOT NULL DEFAULT 'Member',
+    [IsActive] BIT NOT NULL DEFAULT 1,
+    [LastLoginDate] DATETIME NULL,
     [CreatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
     [UpdatedAt] DATETIME NOT NULL DEFAULT GETDATE(),
     [CreatedBy] VARCHAR(50) NULL,
